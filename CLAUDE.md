@@ -34,7 +34,16 @@ O sistema armazena dados pessoais (CPF etc.), possivelmente de menores de idade 
 - Página principal em **`/principal`**; a raiz **`/`** redireciona para `/principal` (`{ path: '', redirectTo: 'principal', pathMatch: 'full' }`)
 - Gestão de usuários e cadastro de pessoas (condutores, beneficiários e tutores) em **`/cadastro`**. Acesso restrito a usuários autenticados com permissão (LGPD). Subrotas sugeridas, a confirmar: `/cadastro/usuarios` e `/cadastro/pessoas`
 - Gestão de ativos e patrimônio em **`/ativosPatrimonio`** (acesso restrito a usuários autenticados, a confirmar)
-- Layout e identidade visual da página principal virão de um **template a ser escolhido pelo usuário**. Até lá, não definir tema, cores ou layout definitivos
+- **Identidade visual**: logo e cores **rosa e azul** da ASSET
+  - Logo original em `LOGO-Asset.png` (raiz, fundo transparente); versão recortada, sem margens, em `public/logo-asset.png` (usada no cabeçalho, na página principal e como favicon)
+  - Cores tiradas do logo: rosa `#CC0665` e azul `#006DBF` (ambas com contraste AA com texto branco). Definidas como variáveis CSS em `src/styles.scss` (`--color-blue`, `--color-pink`, `--color-primary` = azul, `--color-accent` = rosa, variantes `-dark`/`-light`). Nos componentes, usar sempre as variáveis, nunca cores fixas
+- **Template**: [Start Bootstrap - Personal](https://github.com/StartBootstrap/startbootstrap-personal) (MIT), adaptado para Angular, sem o JS do Bootstrap (o menu recolhível e o dropdown usam signals no `AppComponent`)
+  - Bootstrap 5.3 via SCSS: variáveis em `src/styles/_variables.scss` (primária = azul, secundária = rosa, fonte Plus Jakarta Sans via `@fontsource`, sem CDN externo), utilitários do template (`.bg-gradient-primary-to-secondary`, `.text-gradient`, `.profile`) em `src/styles.scss`. Bootstrap Icons (`bi bi-*`)
+  - Telas usam as classes do Bootstrap (cards `rounded-4 shadow-sm`, `form-control`, `btn-primary`/`btn-secondary`, títulos com `.text-gradient`)
+  - Página principal: destaque, "Destaques" (`#destaques`), "Últimas notícias" (`#noticias`), "Sobre nós" com Missão/Visão/Valores (`#sobre`), contato (`#contato`) e carrossel de parceiros (`#parceiros`, componente `app-partner-carousel`, sem JS do Bootstrap); navbar com "Área restrita" (cadastro, usuários, ativos); rodapé
+  - Conteúdo inicial **extraído do site atual** https://educaretransformar.org.br/ (WordPress/Elementor; bloqueia requisições simples com 406, usar Chrome headless `--dump-dom`). Imagens em `public/images/noticias` e `public/images/parceiros` (13 logos). Os links "Ler publicação" ainda apontam para as matérias no site antigo. A página Contato do site antigo lista 11 unidades (CEIs) com foto, endereço e telefone, ainda não trazidas
+  - **Conteúdo** da página principal e do rodapé vem de `SiteContentService` (modelo em `models/site-content.model.ts`, conteúdo inicial provisório em `services/default-site-content.ts`), pronto para as futuras telas de edição. Links aceitam âncora, rota interna ou URL externa (`app-smart-link`)
+  - Aviso de build "4 rules skipped due to selector errors" vem do CSS do próprio Bootstrap 5.3 e é inofensivo
 
 ## Requisito central: edição sem programação
 Quem edita o conteúdo é um usuário **leigo em TI**. Por isso:
@@ -68,7 +77,10 @@ Quem edita o conteúdo é um usuário **leigo em TI**. Por isso:
 - 2026-10-24: projeto gerado com `ng new` (routing, SCSS, sem SSR)
 - 2026-10-24: dependências instaladas pelo npm público e `yarn build` OK. `git init` (branch `main`) com `user.email=alessandro0138@gmail.com` local ao repositório. Nunca usar o e-mail corporativo neste repositório
 - 2026-10-24: `gh` autenticado com a conta pessoal **alessandro138** (HTTPS, `gh auth setup-git`)
-- Pendente: commit inicial; criar o repositório remoto e fazer push
+- 2026-10-24: repositório **privado** criado em https://github.com/alessandro138/projetoAsset (remote `origin`, branch `main`) e commit inicial enviado
+- 2026-10-24: rotas lazy (`/principal`, `/cadastro/pessoas`, `/cadastro/usuarios`, `/ativosPatrimonio`), com páginas provisórias e layout neutro. Validators em `src/app/shared/validators` (CPF, unicidade de CPF assíncrona, tutor de menor, data passada, ao menos um checkbox), utilitários em `shared/utils` e diretiva `appMask` (cpf/cep/phone). Cadastro de pessoas (listagem com CPF mascarado + formulário) usando `PersonService` **em memória** (sem persistência). Tipos de pessoa: condutor, beneficiário e tutor legal (ao menos um). Consentimento LGPD obrigatório no formulário
+- Pendentes: backend/persistência; autenticação e guard em `/cadastro` e `/ativosPatrimonio`; vínculo pessoa ↔ projetos/atividades (aguarda o módulo de projetos); gestão de usuários; módulo de ativos; template visual
+- Testes: `yarn test --watch=false --browsers=ChromeHeadless` (Chrome em `C:\Program Files\Google\Chrome\Application`)
 
 ## Decisões e contexto
 <!-- Registre aqui decisões importantes, requisitos e próximos passos, para retomar em novas sessões. -->

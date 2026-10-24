@@ -1,0 +1,202 @@
+@let hero = content().hero;
+@let highlights = content().highlights;
+@let news = content().news;
+@let about = content().about;
+@let contact = content().contact;
+@let partners = content().partners;
+
+<!-- Destaque principal -->
+<header class="py-5">
+  <div class="container px-4 px-lg-5 pb-5">
+    <div class="row gx-5 align-items-center">
+      <div class="col-xxl-5">
+        <div class="text-center text-xxl-start">
+          <div class="badge bg-gradient-primary-to-secondary text-white mb-4">
+            <div class="text-uppercase">{{ hero.badge }}</div>
+          </div>
+          <div class="fs-3 fw-light text-muted">{{ hero.subtitle }}</div>
+          <h1 class="display-4 fw-bolder mb-5"><span class="text-gradient d-inline">{{ hero.title }}</span></h1>
+          <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-xxl-start mb-3">
+            <app-smart-link [href]="hero.primaryAction.href" linkClass="btn btn-primary btn-lg px-5 py-3 me-sm-3 fs-6 fw-bolder">
+              {{ hero.primaryAction.label }}
+            </app-smart-link>
+            <app-smart-link [href]="hero.secondaryAction.href" linkClass="btn btn-outline-dark btn-lg px-5 py-3 fs-6 fw-bolder">
+              {{ hero.secondaryAction.label }}
+            </app-smart-link>
+          </div>
+        </div>
+      </div>
+      <div class="col-xxl-7">
+        <div class="d-flex justify-content-center mt-5 mt-xxl-0">
+          <div class="profile bg-gradient-primary-to-secondary">
+            <img class="profile-img" [src]="hero.imageUrl" [alt]="hero.imageAlt" />
+            <app-svg-dots class="dots dots-1" />
+            <app-svg-dots class="dots dots-2" />
+            <app-svg-dots class="dots dots-3" />
+            <app-svg-dots class="dots dots-4" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Destaques (cards do projects.html do template) -->
+@if (highlights.items.length) {
+  <section id="destaques" class="bg-light py-5">
+    <div class="container px-4 px-lg-5 my-5">
+      <div class="text-center mb-5">
+        <h2 class="display-5 fw-bolder mb-0"><span class="text-gradient d-inline">{{ highlights.title }}</span></h2>
+      </div>
+      <div class="row gx-5 justify-content-center">
+        <div class="col-lg-11 col-xl-9 col-xxl-8">
+          @for (item of highlights.items; track item.id; let last = $last) {
+            <div class="card overflow-hidden shadow rounded-4 border-0" [class.mb-5]="!last">
+              <div class="card-body p-0">
+                <div class="d-flex flex-column flex-md-row align-items-md-center">
+                  <div class="p-4 p-md-5 flex-grow-1">
+                    <div class="small text-muted mb-2"><i class="bi bi-calendar-event me-1"></i>{{ toDate(item.date) | date: 'longDate' }}</div>
+                    <h3 class="fw-bolder">{{ item.title }}</h3>
+                    @if (item.link) {
+                      <app-smart-link [href]="item.link" linkClass="btn btn-outline-primary btn-sm fw-bolder mt-2">
+                        Ler publicação <i class="bi bi-arrow-right ms-1"></i>
+                      </app-smart-link>
+                    }
+                  </div>
+                  @if (item.imageUrl) {
+                    <img class="highlight-img" [src]="item.imageUrl" [alt]="item.title" loading="lazy" />
+                  } @else {
+                    <div class="highlight-img img-placeholder bg-gradient-primary-to-secondary" aria-hidden="true">
+                      <i class="bi bi-puzzle-fill"></i>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+}
+
+<!-- Últimas notícias -->
+@if (news.items.length) {
+  <section id="noticias" class="py-5">
+    <div class="container px-4 px-lg-5 my-5">
+      <div class="text-center mb-5">
+        <h2 class="display-5 fw-bolder mb-0"><span class="text-gradient d-inline">{{ news.title }}</span></h2>
+      </div>
+      <div class="row g-4">
+        @for (item of news.items; track item.id) {
+          <div class="col-md-6 col-lg-4">
+            <div class="card h-100 overflow-hidden shadow rounded-4 border-0 news-card">
+              @if (item.imageUrl) {
+                <img class="news-img" [src]="item.imageUrl" [alt]="item.title" loading="lazy" />
+              } @else {
+                <div class="news-img img-placeholder bg-gradient-primary-to-secondary" aria-hidden="true">
+                  <i class="bi bi-puzzle-fill"></i>
+                </div>
+              }
+              <div class="card-body p-4 d-flex flex-column">
+                <div class="small text-muted mb-2">{{ toDate(item.date) | date: 'longDate' }}</div>
+                <h3 class="h5 fw-bolder flex-grow-1">{{ item.title }}</h3>
+                @if (item.link) {
+                  <app-smart-link [href]="item.link" linkClass="stretched-link fw-bolder text-decoration-none small">
+                    Ler mais <i class="bi bi-arrow-right"></i>
+                  </app-smart-link>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+}
+
+<!-- Sobre nós -->
+<section id="sobre" class="bg-light py-5">
+  <div class="container px-4 px-lg-5 my-5">
+    <div class="row gx-5 justify-content-center">
+      <div class="col-xxl-8">
+        <div class="text-center mb-4">
+          <h2 class="display-5 fw-bolder"><span class="text-gradient d-inline">{{ about.title }}</span></h2>
+        </div>
+        @for (paragraph of about.paragraphs; track $index; let first = $first) {
+          <p [class]="first ? 'lead fw-light' : 'text-muted'">{{ paragraph }}</p>
+        }
+      </div>
+    </div>
+
+    @if (about.pillars.length) {
+      <div class="row g-4 mt-4">
+        @for (pillar of about.pillars; track pillar.title) {
+          <div class="col-lg-4">
+            <div class="card h-100 shadow-sm rounded-4 border-0">
+              <div class="card-body p-4">
+                <div class="feature bg-gradient-primary-to-secondary text-white rounded-3 mb-3">
+                  <i class="bi" [class]="pillar.icon"></i>
+                </div>
+                <h3 class="h4 fw-bolder">{{ pillar.title }}</h3>
+                <p class="mb-0 text-muted">{{ pillar.text }}</p>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="text-center mt-5">
+      @if (about.action) {
+        <app-smart-link [href]="about.action.href" linkClass="btn btn-primary btn-lg px-5 py-3 fs-6 fw-bolder mb-4">
+          {{ about.action.label }}
+        </app-smart-link>
+      }
+      @if (socialLinks().length) {
+        <div class="d-flex justify-content-center fs-2 gap-4">
+          @for (link of socialLinks(); track link.icon) {
+            <a class="text-gradient" [href]="link.href" target="_blank" rel="noopener" [attr.aria-label]="link.label" [title]="link.label">
+              <i class="bi" [class]="link.icon"></i>
+            </a>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Contato (chamada final do template) -->
+<section id="contato" class="py-5 bg-gradient-primary-to-secondary text-white">
+  <div class="container px-4 px-lg-5 my-5">
+    <div class="text-center">
+      <h2 class="display-4 fw-bolder mb-3">{{ contact.title }}</h2>
+      <p class="lead fw-light mb-4">{{ contact.text }}</p>
+      @if (contact.email) {
+        <a class="btn btn-outline-light btn-lg px-5 py-3 fs-6 fw-bolder mb-4" [href]="'mailto:' + contact.email">
+          <i class="bi bi-envelope-fill me-2"></i>{{ contact.email }}
+        </a>
+      }
+      <div class="d-flex flex-column flex-md-row justify-content-center gap-2 gap-md-4 small">
+        @if (contact.address) {
+          <span><i class="bi bi-geo-alt-fill me-1"></i>{{ contact.officeName }} – {{ contact.address }}</span>
+        }
+        @for (phone of contact.phones; track phone) {
+          <a class="text-white" [href]="phoneHref(phone)"><i class="bi bi-telephone-fill me-1"></i>{{ phone }}</a>
+        }
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Parceiros -->
+@if (partners.items.length) {
+  <section id="parceiros" class="py-5">
+    <div class="container px-4 px-lg-5 my-4">
+      <div class="text-center mb-4">
+        <h2 class="display-6 fw-bolder mb-0"><span class="text-gradient d-inline">{{ partners.title }}</span></h2>
+      </div>
+      <app-partner-carousel [partners]="partners.items" />
+    </div>
+  </section>
+}

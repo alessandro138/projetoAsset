@@ -1,0 +1,165 @@
+<h1 class="fw-bolder mb-4"><span class="text-gradient d-inline">{{ id() ? 'Editar pessoa' : 'Nova pessoa' }}</span></h1>
+
+<form [formGroup]="form" (ngSubmit)="save()" novalidate class="d-flex flex-column gap-4">
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-4">
+      <h2 class="h5 fw-bolder text-primary mb-3">Dados pessoais</h2>
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label" for="fullName">Nome completo *</label>
+          <input id="fullName" class="form-control" formControlName="fullName" autocomplete="off"
+                 [class.is-invalid]="showError('fullName')" />
+          @if (showError('fullName', 'required')) {
+            <div class="invalid-feedback">Informe o nome completo.</div>
+          }
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label" for="cpf">CPF *</label>
+          <input id="cpf" class="form-control" formControlName="cpf" appMask="cpf" inputmode="numeric"
+                 placeholder="000.000.000-00" [class.is-invalid]="showError('cpf')" />
+          @if (showError('cpf', 'required')) {
+            <div class="invalid-feedback">Informe o CPF.</div>
+          } @else if (showError('cpf', 'cpf')) {
+            <div class="invalid-feedback">CPF inválido. Confira os números digitados.</div>
+          } @else if (showError('cpf', 'cpfTaken')) {
+            <div class="invalid-feedback">Já existe uma pessoa cadastrada com este CPF.</div>
+          }
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label" for="birthDate">Data de nascimento *</label>
+          <input id="birthDate" type="date" class="form-control" formControlName="birthDate"
+                 [class.is-invalid]="showError('birthDate')" />
+          @if (showError('birthDate', 'required')) {
+            <div class="invalid-feedback">Informe a data de nascimento.</div>
+          } @else if (showError('birthDate', 'futureDate')) {
+            <div class="invalid-feedback">A data de nascimento não pode ser no futuro.</div>
+          } @else if (showError('birthDate', 'date')) {
+            <div class="invalid-feedback">Data inválida.</div>
+          }
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label" for="phone">Telefone</label>
+          <input id="phone" class="form-control" formControlName="phone" appMask="phone" inputmode="tel"
+                 placeholder="(00) 00000-0000" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4" formGroupName="types">
+    <div class="card-body p-4">
+      <h2 class="h5 fw-bolder text-primary mb-3">Tipo *</h2>
+      <div class="d-flex flex-wrap gap-4">
+        @for (option of typeOptions; track option[0]) {
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" [id]="'type-' + option[0]" [formControlName]="option[0]" />
+            <label class="form-check-label" [for]="'type-' + option[0]">{{ option[1] }}</label>
+          </div>
+        }
+      </div>
+      @if (showError('types', 'atLeastOne')) {
+        <div class="text-danger small mt-2">Marque pelo menos um tipo.</div>
+      }
+    </div>
+  </div>
+
+  @if (isBeneficiary()) {
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+        <h2 class="h5 fw-bolder text-primary mb-3">Tutor legal</h2>
+        @if (isMinor()) {
+          <div class="alert alert-info py-2">Beneficiário menor de idade: o tutor legal é obrigatório.</div>
+        }
+        <label class="form-label" for="guardianId">Tutor legal{{ isMinor() ? ' *' : '' }}</label>
+        <select id="guardianId" class="form-select" formControlName="guardianId"
+                [class.is-invalid]="showFormError('guardianRequired') || showFormError('guardianMinor') || showFormError('guardianNotFound')">
+          <option value="">Selecione</option>
+          @for (person of guardianOptions(); track person.id) {
+            <option [value]="person.id">{{ person.fullName }}</option>
+          }
+        </select>
+        @if (showFormError('guardianRequired')) {
+          <div class="invalid-feedback">Selecione o tutor legal do beneficiário menor de idade.</div>
+        } @else if (showFormError('guardianMinor')) {
+          <div class="invalid-feedback">O tutor legal precisa ser maior de idade.</div>
+        } @else if (showFormError('guardianNotFound')) {
+          <div class="invalid-feedback">Tutor legal não encontrado. Selecione outra pessoa.</div>
+        }
+        @if (guardianOptions().length === 0) {
+          <div class="form-text">
+            Nenhuma pessoa maior de idade cadastrada. Cadastre o tutor primeiro (marque o tipo "Tutor legal").
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <div class="card border-0 shadow-sm rounded-4" formGroupName="address">
+    <div class="card-body p-4">
+      <h2 class="h5 fw-bolder text-primary mb-3">Endereço</h2>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label" for="cep">CEP</label>
+          <input id="cep" class="form-control" formControlName="cep" appMask="cep" inputmode="numeric" placeholder="00000-000" />
+        </div>
+        <div class="col-md-9">
+          <label class="form-label" for="street">Logradouro</label>
+          <input id="street" class="form-control" formControlName="street" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="number">Número</label>
+          <input id="number" class="form-control" formControlName="number" />
+        </div>
+        <div class="col-md-9">
+          <label class="form-label" for="complement">Complemento</label>
+          <input id="complement" class="form-control" formControlName="complement" />
+        </div>
+        <div class="col-md-5">
+          <label class="form-label" for="district">Bairro</label>
+          <input id="district" class="form-control" formControlName="district" />
+        </div>
+        <div class="col-md-5">
+          <label class="form-label" for="city">Cidade</label>
+          <input id="city" class="form-control" formControlName="city" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label" for="state">UF</label>
+          <select id="state" class="form-select" formControlName="state">
+            <option value="">--</option>
+            @for (uf of states; track uf) {
+              <option [value]="uf">{{ uf }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-4">
+      <h2 class="h5 fw-bolder text-primary mb-3">Consentimento (LGPD)</h2>
+      <div class="form-check">
+        <input id="consentGiven" class="form-check-input" type="checkbox" formControlName="consentGiven"
+               [class.is-invalid]="showError('consentGiven')" />
+        <label class="form-check-label" for="consentGiven">
+          A pessoa (ou o tutor legal, no caso de menores) autorizou o uso destes dados pela ASSET.
+        </label>
+        @if (showError('consentGiven')) {
+          <div class="invalid-feedback">O consentimento é necessário para salvar o cadastro.</div>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (submitted() && form.invalid) {
+    <div class="alert alert-danger mb-0">Há campos para corrigir. Veja as mensagens acima.</div>
+  }
+
+  <div class="d-flex align-items-center gap-3">
+    <button type="submit" class="btn btn-primary btn-lg px-5 fw-bolder">Salvar</button>
+    <a routerLink="/cadastro/pessoas" class="btn btn-outline-dark btn-lg px-4">Cancelar</a>
+  </div>
+</form>

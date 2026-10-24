@@ -1,1 +1,109 @@
-/* You can add global styles to this file, and also import other style files */
+/*
+ * Tema da ASSET baseado no template Start Bootstrap - Personal
+ * (https://github.com/StartBootstrap/startbootstrap-personal), licença MIT, Copyright (c) 2013-2023 Start Bootstrap LLC.
+ *
+ * Cores da identidade visual em styles/_variables.scss. Nos componentes, use as classes do Bootstrap
+ * (text-primary, btn-secondary...) ou as variáveis CSS abaixo, nunca cores fixas.
+ */
+@import 'styles/variables';
+@import 'bootstrap/scss/bootstrap';
+
+:root {
+  --color-blue: #{$blue};
+  --color-pink: #{$pink};
+  --color-blue-light: #{tint-color($blue, 90%)};
+  --color-pink-light: #{tint-color($pink, 90%)};
+  --color-primary: var(--bs-primary);
+  --color-accent: var(--bs-secondary);
+}
+
+// Rodapé fixo no fim da página (do template)
+html,
+body,
+app-root {
+  height: 100%;
+}
+
+app-root {
+  display: flex;
+  flex-direction: column;
+}
+
+// Utilitários do template
+.bg-gradient-primary-to-secondary {
+  background: $primary;
+  background: linear-gradient(135deg, $primary 0%, $secondary 100%);
+}
+
+// Use em elementos inline (span.d-inline)
+.text-gradient {
+  background: linear-gradient(315deg, $primary 0%, $secondary 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+// Caixa de ícone do template (components/_feature.scss)
+.feature {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 3rem;
+  width: 3rem;
+  font-size: 1.5rem;
+}
+
+// Moldura da imagem do destaque, adaptada do componente "profile" do template para o logo da ASSET
+.profile {
+  position: relative;
+  width: min(75vw, 26rem);
+  aspect-ratio: 1;
+  border-radius: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .profile-img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+    padding: 8%;
+    background: $white;
+    border-radius: 1.5rem;
+    box-shadow: $box-shadow-lg;
+  }
+
+  .dots {
+    position: absolute;
+    width: clamp(0.6rem, 2vw, 1rem);
+  }
+
+  .dots-1 {
+    right: 4%;
+    top: 6%;
+    fill: $white;
+  }
+
+  .dots-2 {
+    right: -8%;
+    top: 10%;
+    fill: $primary;
+  }
+
+  .dots-3 {
+    left: 4%;
+    bottom: 10%;
+    fill: $white;
+  }
+
+  .dots-4 {
+    left: -8%;
+    bottom: 6%;
+    fill: $secondary;
+  }
+}
+
+// Seções ancoradas não ficam coladas no topo ao navegar por #sobre, #projetos
+section[id] {
+  scroll-margin-top: 1rem;
+}

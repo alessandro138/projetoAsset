@@ -1,0 +1,5 @@
+// O botão "Área restrita" usa a aparência de link do menu
+.nav-item.dropdown > button.nav-link {
+  border: 0;
+  background: none;
+}
