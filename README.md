@@ -1,59 +1,65 @@
-# ProjetoAsset
+# projetoAsset
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.12.
+Sistema de apoio à administração da **ASSET – Associação Educar Para Transformar**, organização da sociedade civil que atua com educação infantil na cidade de São Paulo.
 
-## Development server
+## Funcionalidades
 
-To start a local development server, run:
+- **Página principal** (`/principal`): apresentação da associação, destaques, últimas notícias, sobre nós (missão, visão e valores), contato e carrossel de parceiros. O conteúdo vem de dados editáveis, para que o administrador possa atualizá-lo sem mexer em código.
+- **Cadastro de pessoas** (`/cadastro/pessoas`): condutores, beneficiários e tutores legais, com:
+  - validação de CPF (dígitos verificadores, sequências repetidas e duplicidade);
+  - beneficiário menor de idade vinculado obrigatoriamente a um tutor legal maior de idade;
+  - máscaras de CPF, CEP e telefone;
+  - CPF parcialmente oculto nas listagens e registro de consentimento (LGPD).
+- **Gestão de usuários** (`/cadastro/usuarios`) e **ativos e patrimônio** (`/ativosPatrimonio`): em construção.
 
-```bash
-ng serve
-```
+> Ainda não há backend: os dados ficam em memória e se perdem ao recarregar a página.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Tecnologias
 
-## Code scaffolding
+- [Angular](https://angular.dev/) 19 (componentes standalone e signals), TypeScript e RxJS
+- [Bootstrap](https://getbootstrap.com/) 5.3 (SCSS), Bootstrap Icons e fonte Plus Jakarta Sans
+- Testes unitários com Karma e Jasmine
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Pré-requisitos
 
-```bash
-ng generate component component-name
-```
+- [Node.js](https://nodejs.org/) 20 ou 22 (LTS)
+- [Yarn](https://classic.yarnpkg.com/) 1.x
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+O projeto usa o registry público do npm, definido em `.yarnrc`.
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+## Como executar
 
 ```bash
-ng test
+yarn install   # instala as dependências
+yarn start     # servidor de desenvolvimento em http://localhost:4200
 ```
 
-## Running end-to-end tests
+A página recarrega sozinha a cada alteração no código.
 
-For end-to-end (e2e) testing, run:
+## Outros comandos
 
-```bash
-ng e2e
+| Comando | Descrição |
+| --- | --- |
+| `yarn build` | Gera a versão de produção em `dist/projeto-asset` |
+| `yarn test` | Executa os testes unitários (use `--watch=false --browsers=ChromeHeadless` para rodar uma vez, sem abrir o navegador) |
+| `yarn watch` | Gera a versão de desenvolvimento a cada alteração |
+
+## Estrutura
+
+```
+src/
+├── app/
+│   ├── models/          # Modelos de dados (pessoa, conteúdo do site)
+│   ├── pages/           # Telas: principal, cadastro, ativos e patrimônio
+│   ├── services/        # Serviços e conteúdo inicial da página principal
+│   └── shared/          # Componentes, diretivas, validators e utilitários reutilizáveis
+├── styles/              # Variáveis do tema (cores da ASSET)
+└── styles.scss          # Estilos globais e utilitários do template
+public/                  # Logo e imagens (notícias e parceiros)
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## Identidade visual
 
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- Cores tiradas do logo: azul `#006DBF` (primária) e rosa `#CC0665` (secundária), definidas em `src/styles/_variables.scss`.
+- Layout baseado no template [Start Bootstrap - Personal](https://github.com/StartBootstrap/startbootstrap-personal), licença MIT, Copyright (c) 2013-2023 Start Bootstrap LLC.
+- Textos e imagens iniciais da página principal extraídos do site atual da associação: [educaretransformar.org.br](https://educaretransformar.org.br/).
