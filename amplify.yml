@@ -1,0 +1,23 @@
+# Build da AWS Amplify Hosting. Este arquivo tem prioridade sobre as configurações de build do console.
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        # Angular 19 exige Node 18.19+, 20.11+ ou 22+
+        - nvm install 22
+        - nvm use 22
+        - node -v
+        - corepack enable || npm install -g yarn
+        - yarn install --frozen-lockfile
+    build:
+      commands:
+        - yarn build
+  artifacts:
+    # O builder "application" do Angular gera o site dentro de browser/
+    baseDirectory: dist/projeto-asset/browser
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
