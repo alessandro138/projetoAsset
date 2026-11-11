@@ -14,6 +14,9 @@ import { ageOn } from '../../../../shared/utils/date';
 export class PersonListComponent {
   private readonly personService = inject(PersonService);
 
+  readonly loading = this.personService.loading;
+  readonly loadError = this.personService.loadError;
+
   readonly rows = computed(() =>
     [...this.personService.all()]
       .sort((a, b) => a.fullName.localeCompare(b.fullName, 'pt-BR'))
@@ -27,4 +30,12 @@ export class PersonListComponent {
         isBeneficiary: p.types.includes('beneficiario'),
       })),
   );
+
+  constructor() {
+    this.personService.load();
+  }
+
+  reload(): void {
+    this.personService.load(true);
+  }
 }

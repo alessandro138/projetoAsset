@@ -3,7 +3,14 @@
   <a routerLink="nova" class="btn btn-secondary fw-bolder"><i class="bi bi-person-plus-fill me-2"></i>Nova pessoa</a>
 </div>
 
-@if (rows().length === 0) {
+@if (loadError()) {
+  <div class="alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2">
+    {{ loadError() }}
+    <button type="button" class="btn btn-sm btn-outline-danger" (click)="reload()">Tentar de novo</button>
+  </div>
+} @else if (loading() && rows().length === 0) {
+  <div class="text-center text-muted py-5"><span class="spinner-border spinner-border-sm me-2"></span>Carregando...</div>
+} @else if (rows().length === 0) {
   <div class="card border-0 shadow-sm rounded-4">
     <div class="card-body p-4 text-center text-muted">Nenhuma pessoa cadastrada ainda.</div>
   </div>

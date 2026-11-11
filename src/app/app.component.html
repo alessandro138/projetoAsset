@@ -44,9 +44,23 @@
               <i class="bi bi-lock-fill me-1"></i>Área restrita
             </button>
             <ul class="dropdown-menu dropdown-menu-end" [class.show]="adminMenuOpen()">
-              <li><a class="dropdown-item" routerLink="/cadastro/pessoas">Cadastro de pessoas</a></li>
-              <li><a class="dropdown-item" routerLink="/cadastro/usuarios">Usuários</a></li>
-              <li><a class="dropdown-item" routerLink="/ativosPatrimonio">Ativos e patrimônio</a></li>
+              @if (auth.isLoggedIn()) {
+                <li><span class="dropdown-item-text small text-muted">{{ auth.email() }}</span></li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><a class="dropdown-item" routerLink="/cadastro/pessoas">Cadastro de pessoas</a></li>
+                <li><a class="dropdown-item" routerLink="/cadastro/usuarios">Usuários</a></li>
+                <li><a class="dropdown-item" routerLink="/ativosPatrimonio">Ativos e patrimônio</a></li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <button type="button" class="dropdown-item" (click)="signOut()">
+                    <i class="bi bi-box-arrow-right me-2"></i>Sair
+                  </button>
+                </li>
+              } @else {
+                <li>
+                  <a class="dropdown-item" routerLink="/login"><i class="bi bi-box-arrow-in-right me-2"></i>Entrar</a>
+                </li>
+              }
             </ul>
           </li>
         </ul>

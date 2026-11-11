@@ -37,7 +37,9 @@ const STATES = [
   'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
 ];
 
+// Mesmos limites do bucket "fotos-pessoas" no Supabase
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 type HealthAnswerGroup = FormGroup<{ answer: FormControl<boolean | null>; details: FormControl<string> }>;
 
@@ -67,6 +69,9 @@ export class PersonFormComponent implements OnInit {
   readonly healthQuestions = HEALTH_QUESTIONS;
   readonly submitted = signal(false);
   readonly photoError = signal('');
+  readonly saving = signal(false);
+  readonly saveError = signal('');
+  readonly loading = this.personService.loading;
 
   // Para adicionar campos: inclua aqui, no template e em toPerson/toFormValue (e na ficha, se for o caso)
   readonly form = this.fb.nonNullable.group(
@@ -154,7 +159,9 @@ export class PersonFormComponent implements OnInit {
     return guardianId ? (this.personService.getById(guardianId) ?? null) : null;
   });
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    // Lista de responsáveis e pessoa em edição vêm do banco
+    await this.personService.load();
     const id = this.id();
     if (!id) {
       return;
@@ -165,6 +172,7 @@ export class PersonFormComponent implements OnInit {
       return;
     }
     this.form.patchValue(this.toFormValue(person));
+    this.form.updateValueAndValidity();
   }
 
   showError(path: string, error?: string): boolean {
@@ -190,8 +198,8 @@ export class PersonFormComponent implements OnInit {
     if (!file) {
       return;
     }
-    if (!file.type.startsWith('image/')) {
-      this.photoError.set('Escolha um arquivo de imagem (JPG ou PNG).');
+    if (!PHOTO_TYPES.includes(file.type)) {
+      this.photoError.set('Escolha uma foto em JPG, PNG ou WebP.');
       return;
     }
     if (file.size > MAX_PHOTO_BYTES) {
@@ -212,14 +220,22 @@ export class PersonFormComponent implements OnInit {
     window.print();
   }
 
-  save(): void {
+  async save(): Promise<void> {
     this.submitted.set(true);
+    this.saveError.set('');
     if (this.form.invalid || this.form.pending) {
       this.form.markAllAsTouched();
       return;
     }
-    this.personService.save(this.toPerson());
-    this.router.navigate(['/cadastro/pessoas']);
+    this.saving.set(true);
+    try {
+      await this.personService.save(this.toPerson());
+      this.router.navigate(['/cadastro/pessoas']);
+    } catch (error) {
+      this.saveError.set(error instanceof Error ? error.message : 'Não foi possível salvar.');
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   private buildHealthAnswers() {

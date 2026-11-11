@@ -23,6 +23,8 @@ import { EnrollmentSheetComponent } from '../../../../shared/components/enrollme
       <div class="sheet-preview">
         <app-enrollment-sheet [person]="p" [guardian]="guardian()" />
       </div>
+    } @else if (loading()) {
+      <div class="text-center text-muted py-5"><span class="spinner-border spinner-border-sm me-2"></span>Carregando...</div>
     } @else {
       <div class="alert alert-warning">Pessoa não encontrada.</div>
       <a routerLink="/cadastro/pessoas" class="btn btn-outline-dark">Voltar</a>
@@ -44,6 +46,12 @@ export class EnrollmentSheetPageComponent {
     const guardianId = this.person()?.guardianId;
     return guardianId ? (this.personService.getById(guardianId) ?? null) : null;
   });
+
+  readonly loading = this.personService.loading;
+
+  constructor() {
+    this.personService.load();
+  }
 
   print(): void {
     window.print();

@@ -70,7 +70,7 @@
           </div>
           <label class="btn btn-sm btn-outline-primary mb-0">
             <i class="bi bi-camera me-1"></i>{{ photo() ? 'Trocar foto' : 'Foto 3x4' }}
-            <input type="file" accept="image/*" class="d-none" (change)="onPhotoSelected($event)" />
+            <input type="file" accept="image/jpeg,image/png,image/webp" class="d-none" (change)="onPhotoSelected($event)" />
           </label>
           @if (photo()) {
             <button type="button" class="btn btn-sm btn-link text-danger p-0" (click)="removePhoto()">Remover</button>
@@ -388,9 +388,18 @@
   @if (submitted() && form.invalid) {
     <div class="alert alert-danger mb-0">Há campos para corrigir. Veja as mensagens acima.</div>
   }
+  @if (saveError()) {
+    <div class="alert alert-danger mb-0">{{ saveError() }}</div>
+  }
 
   <div class="d-flex flex-wrap align-items-center gap-3">
-    <button type="submit" class="btn btn-primary btn-lg px-5 fw-bolder">Salvar</button>
+    <button type="submit" class="btn btn-primary btn-lg px-5 fw-bolder" [disabled]="saving() || loading()">
+      @if (saving()) {
+        <span class="spinner-border spinner-border-sm me-2"></span>Salvando...
+      } @else {
+        Salvar
+      }
+    </button>
     @if (isBeneficiary()) {
       <button type="button" class="btn btn-secondary btn-lg px-4 fw-bolder" (click)="print()">
         <i class="bi bi-printer me-2"></i>Imprimir ficha de matrícula
