@@ -4,7 +4,7 @@ import { parseIsoDate } from '../utils/date';
 
 interface BeneficiaryFormValue {
   types?: { beneficiario?: boolean };
-  enrollment?: { startDate?: string; endDate?: string; modality?: string };
+  enrollment?: { startDate?: string; endDate?: string; modalityId?: string };
   imageConsent?: boolean | null;
 }
 
@@ -23,7 +23,7 @@ export function beneficiaryValidator(): ValidatorFn {
     if (!enrollment?.startDate) {
       errors['enrollmentStartRequired'] = true;
     }
-    if (!enrollment?.modality?.trim()) {
+    if (!enrollment?.modalityId) {
       errors['modalityRequired'] = true;
     }
     const start = parseIsoDate(enrollment?.startDate);

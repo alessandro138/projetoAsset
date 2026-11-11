@@ -116,7 +116,7 @@ export class PersonService {
     try {
       const { data, error } = await this.supabase
         .from('pessoas')
-        .select('*, matriculas(*), fichas_saude(*)')
+        .select('*, matriculas(*, modalidades_servicos(nome)), fichas_saude(*)')
         .order('nome_completo')
         .returns<PessoaComRelacoes[]>();
       if (error || !data) {

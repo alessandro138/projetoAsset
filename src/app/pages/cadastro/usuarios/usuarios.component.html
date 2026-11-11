@@ -1,0 +1,197 @@
+<h1 class="fw-bolder mb-4"><span class="text-gradient d-inline">Usuários</span></h1>
+
+<div class="d-flex flex-column gap-4">
+  <!-- Minha conta -->
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-4">
+      <h2 class="h5 fw-bolder text-primary mb-3"><i class="bi bi-person-circle me-2"></i>Minha conta</h2>
+      <div class="row g-3 align-items-start">
+        <form class="col-lg-7" [formGroup]="nameForm" (ngSubmit)="saveName()" novalidate>
+          <label class="form-label" for="ownName">Nome completo</label>
+          <div class="input-group">
+            <input id="ownName" class="form-control" formControlName="fullName"
+                   [class.is-invalid]="nameForm.controls.fullName.touched && nameForm.controls.fullName.invalid" />
+            <button type="submit" class="btn btn-primary fw-bolder" [disabled]="nameSaving() || nameForm.pristine">
+              {{ nameSaving() ? 'Salvando...' : 'Salvar nome' }}
+            </button>
+            <div class="invalid-feedback">Informe o nome completo.</div>
+          </div>
+          @if (nameMessage(); as message) {
+            <div class="small mt-2" [class]="message.ok ? 'text-success' : 'text-danger'">
+              <i class="bi me-1" [class]="message.ok ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'"></i>{{ message.text }}
+            </div>
+          }
+        </form>
+        <div class="col-lg-5">
+          <div class="small text-muted">E-mail</div>
+          <div class="mb-2">{{ auth.email() }}</div>
+          <div class="small text-muted">Nível de acesso</div>
+          <div class="mb-3">
+            <span class="badge text-bg-primary">{{ levelLabel(auth.profile()?.level ?? null) }}</span>
+            @if (auth.profile()?.level; as level) {
+              <span class="small text-muted ms-1">{{ levels[level].description }}</span>
+            }
+          </div>
+          <a routerLink="/trocar-senha" class="btn btn-outline-primary btn-sm"><i class="bi bi-key me-1"></i>Alterar senha</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (canManage()) {
+    <!-- Novo usuário -->
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+        <h2 class="h5 fw-bolder text-primary mb-3"><i class="bi bi-person-plus me-2"></i>Novo usuário</h2>
+
+        @if (created(); as info) {
+          <div class="alert alert-success" role="status">
+            <div class="fw-bold mb-1"><i class="bi bi-check-circle-fill me-1"></i>Usuário criado com sucesso!</div>
+            Envie ao novo usuário o e-mail <strong>{{ info.email }}</strong> e a senha provisória abaixo.
+            No primeiro acesso, o sistema pedirá que ele crie uma senha própria.
+            <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+              <code class="fs-6 user-select-all bg-white rounded px-2 py-1">{{ info.password }}</code>
+              <button type="button" class="btn btn-sm btn-outline-success" (click)="copyCreatedPassword()">
+                <i class="bi me-1" [class]="passwordCopied() ? 'bi-check2' : 'bi-clipboard'"></i>{{ passwordCopied() ? 'Copiada' : 'Copiar senha' }}
+              </button>
+            </div>
+          </div>
+        }
+
+        <form [formGroup]="newUserForm" (ngSubmit)="createUser()" novalidate>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="newName">Nome completo *</label>
+              <input id="newName" class="form-control" formControlName="fullName" autocomplete="off"
+                     [class.is-invalid]="newUserForm.controls.fullName.touched && newUserForm.controls.fullName.invalid" />
+              <div class="invalid-feedback">Informe o nome completo.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="newEmail">E-mail *</label>
+              <input id="newEmail" type="email" class="form-control" formControlName="email" autocomplete="off"
+                     [class.is-invalid]="newUserForm.controls.email.touched && newUserForm.controls.email.invalid" />
+              <div class="invalid-feedback">Informe um e-mail válido.</div>
+            </div>
+            <div class="col-md-6">
+              <span class="form-label d-block">Nível de acesso *</span>
+              @for (level of assignableLevels; track level) {
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" formControlName="level" [value]="level" [id]="'level-' + level" />
+                  <label class="form-check-label" [for]="'level-' + level">
+                    <strong>{{ levels[level].label }}</strong> <span class="text-muted small">– {{ levels[level].description }}</span>
+                  </label>
+                </div>
+              }
+              <div class="form-text">O nível admin só pode ser definido direto no banco de dados.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="newPassword">Senha provisória *</label>
+              <div class="input-group">
+                <input id="newPassword" class="form-control font-monospace" formControlName="password" autocomplete="off"
+                       [class.is-invalid]="newUserForm.controls.password.touched && newUserForm.controls.password.invalid" />
+                <button type="button" class="btn btn-outline-secondary" (click)="suggestPassword()" title="Sugerir outra senha segura">
+                  <i class="bi bi-magic"></i><span class="visually-hidden">Sugerir outra senha segura</span>
+                </button>
+                <div class="invalid-feedback">
+                  A senha precisa ter {{ passwordRules[0].label.toLowerCase() }}, maiúscula, minúscula, número e símbolo.
+                </div>
+              </div>
+              <div class="form-text">Já vem uma senha segura sugerida. O usuário a troca no primeiro acesso.</div>
+            </div>
+          </div>
+
+          @if (createError()) {
+            <div class="alert alert-danger mt-3 mb-0">{{ createError() }}</div>
+          }
+
+          <button type="submit" class="btn btn-secondary fw-bolder mt-3" [disabled]="creating()">
+            @if (creating()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>Criando...
+            } @else {
+              <i class="bi bi-person-plus-fill me-2"></i>Criar usuário
+            }
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Usuários do sistema -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+      <div class="card-body p-4 pb-2">
+        <h2 class="h5 fw-bolder text-primary mb-0"><i class="bi bi-people me-2"></i>Usuários do sistema</h2>
+      </div>
+      @if (admin.loadError()) {
+        <div class="alert alert-danger m-4">{{ admin.loadError() }}</div>
+      } @else if (admin.loading() && admin.users().length === 0) {
+        <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>Carregando...</div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Nível</th>
+                <th>Ativo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of admin.users(); track user.id) {
+                <tr [class.opacity-50]="!user.active">
+                  <td class="fw-bold">
+                    {{ user.fullName || '—' }}
+                    @if (isSelf(user)) {
+                      <span class="badge text-bg-light text-secondary ms-1">você</span>
+                    }
+                  </td>
+                  <td class="small">{{ user.email }}</td>
+                  <td>
+                    @if (isLocked(user)) {
+                      <span class="badge" [class]="user.level === 'admin' ? 'text-bg-dark' : 'text-bg-primary'">{{ levelLabel(user.level) }}</span>
+                    } @else {
+                      <select class="form-select form-select-sm" [attr.aria-label]="'Nível de ' + user.fullName"
+                              [disabled]="rowBusy() === user.id" (change)="changeLevel(user, $event)">
+                        @if (!user.level) {
+                          <option value="" selected disabled>Sem nível</option>
+                        }
+                        @for (level of assignableLevels; track level) {
+                          <option [value]="level" [selected]="user.level === level">{{ levels[level].label }}</option>
+                        }
+                      </select>
+                    }
+                  </td>
+                  <td>
+                    <div class="form-check form-switch mb-0">
+                      <input class="form-check-input" type="checkbox" role="switch" [checked]="user.active"
+                             [disabled]="isLocked(user) || rowBusy() === user.id" (change)="toggleActive(user)"
+                             [attr.aria-label]="(user.active ? 'Desativar ' : 'Ativar ') + user.fullName" />
+                    </div>
+                  </td>
+                  <td class="text-end">
+                    @if (!isLocked(user)) {
+                      <button type="button" class="btn btn-sm btn-outline-danger" [disabled]="rowBusy() === user.id"
+                              (click)="deleteUser(user)">
+                        <i class="bi bi-trash me-1"></i>Excluir
+                      </button>
+                    }
+                  </td>
+                </tr>
+                @if (rowError()?.id === user.id) {
+                  <tr>
+                    <td colspan="5" class="text-danger small border-0 pt-0">
+                      <i class="bi bi-exclamation-circle-fill me-1"></i>{{ rowError()?.text }}
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="small text-muted px-4 py-3">
+          Usuários admin e o seu próprio usuário não podem ser alterados por aqui.
+        </div>
+      }
+    </div>
+  }
+</div>

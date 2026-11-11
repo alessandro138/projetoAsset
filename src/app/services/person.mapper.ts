@@ -46,7 +46,9 @@ export interface MatriculaRow {
   pessoa_id: string;
   data_inicio: string;
   data_termino: string | null;
-  modalidade: string;
+  modalidade_servico_id: string;
+  /** Relação carregada junto com a matrícula (para exibir o nome) */
+  modalidades_servicos?: { nome: string } | null;
 }
 
 export interface FichaSaudeRow {
@@ -64,7 +66,7 @@ export interface FichaSaudeRow {
 
 /** Colunas editáveis de pessoas (sem id, foto e campos de controle) */
 export type PessoaInput = Omit<PessoaRow, 'id' | 'foto_caminho'>;
-export type MatriculaInput = Omit<MatriculaRow, 'id' | 'pessoa_id'>;
+export type MatriculaInput = Omit<MatriculaRow, 'id' | 'pessoa_id' | 'modalidades_servicos'>;
 export type FichaSaudeInput = Omit<FichaSaudeRow, 'pessoa_id'>;
 
 function nullIfEmpty(value: string | null | undefined): string | null {
@@ -103,7 +105,7 @@ export function toMatriculaInput(enrollment: Enrollment): MatriculaInput {
   return {
     data_inicio: enrollment.startDate,
     data_termino: nullIfEmpty(enrollment.endDate),
-    modalidade: enrollment.modality.trim(),
+    modalidade_servico_id: enrollment.modalityId,
   };
 }
 
@@ -161,7 +163,12 @@ export function fromRows(
     guardianId: row.responsavel_id,
     guardianRelationship: row.grau_parentesco ?? '',
     enrollment: matricula
-      ? { startDate: matricula.data_inicio, endDate: matricula.data_termino ?? '', modality: matricula.modalidade }
+      ? {
+          startDate: matricula.data_inicio,
+          endDate: matricula.data_termino ?? '',
+          modalityId: matricula.modalidade_servico_id,
+          modality: matricula.modalidades_servicos?.nome ?? '',
+        }
       : null,
     health: ficha
       ? {

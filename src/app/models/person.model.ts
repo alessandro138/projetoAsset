@@ -28,7 +28,18 @@ export interface Enrollment {
   startDate: string;
   /** 'AAAA-MM-DD'; vazio enquanto a matrícula estiver ativa */
   endDate: string;
+  /** Id em modalidades_servicos */
+  modalityId: string;
+  /** Nome da modalidade (para exibir e imprimir) */
   modality: string;
+}
+
+/** Modalidade oferecida pela ASSET (no banco: tabela modalidades_servicos) */
+export interface Modality {
+  id: string;
+  name: string;
+  /** Inativas não aparecem para novas matrículas */
+  active: boolean;
 }
 
 export type VaccinationStatus = 'atualizado' | 'atrasado' | 'sem-informacao';

@@ -5,7 +5,7 @@ import { beneficiaryValidator } from './beneficiary.validator';
 describe('beneficiaryValidator', () => {
   function buildForm(
     beneficiario: boolean,
-    enrollment: { startDate: string; endDate: string; modality: string },
+    enrollment: { startDate: string; endDate: string; modalityId: string },
     imageConsent: boolean | null,
   ) {
     return new FormGroup(
@@ -14,7 +14,7 @@ describe('beneficiaryValidator', () => {
         enrollment: new FormGroup({
           startDate: new FormControl(enrollment.startDate),
           endDate: new FormControl(enrollment.endDate),
-          modality: new FormControl(enrollment.modality),
+          modalityId: new FormControl(enrollment.modalityId),
         }),
         imageConsent: new FormControl<boolean | null>(imageConsent),
       },
@@ -23,11 +23,11 @@ describe('beneficiaryValidator', () => {
   }
 
   it('ignores people who are not beneficiaries', () => {
-    expect(buildForm(false, { startDate: '', endDate: '', modality: '' }, null).errors).toBeNull();
+    expect(buildForm(false, { startDate: '', endDate: '', modalityId: '' }, null).errors).toBeNull();
   });
 
   it('requires start date, modality and an image consent answer', () => {
-    expect(buildForm(true, { startDate: '', endDate: '', modality: ' ' }, null).errors).toEqual({
+    expect(buildForm(true, { startDate: '', endDate: '', modalityId: '' }, null).errors).toEqual({
       enrollmentStartRequired: true,
       modalityRequired: true,
       imageConsentRequired: true,
@@ -35,12 +35,12 @@ describe('beneficiaryValidator', () => {
   });
 
   it('accepts "no" as an image consent answer', () => {
-    expect(buildForm(true, { startDate: '2026-02-01', endDate: '', modality: 'Berçário' }, false).errors).toBeNull();
+    expect(buildForm(true, { startDate: '2026-02-01', endDate: '', modalityId: 'm1' }, false).errors).toBeNull();
   });
 
   it('rejects an end date before the start date', () => {
     expect(
-      buildForm(true, { startDate: '2026-02-01', endDate: '2026-01-31', modality: 'Berçário' }, true).errors,
+      buildForm(true, { startDate: '2026-02-01', endDate: '2026-01-31', modalityId: 'm1' }, true).errors,
     ).toEqual({ enrollmentEndBeforeStart: true });
   });
 });

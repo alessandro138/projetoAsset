@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { roleGuard } from './guards/role.guard';
+import { levelGuard, loggedInGuard } from './guards/level.guard';
 
 // Área restrita: o guard evita telas sem permissão; a proteção dos dados é do banco (RLS)
 export const routes: Routes = [
@@ -21,6 +21,13 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent),
   },
   {
+    path: 'trocar-senha',
+    title: 'Trocar senha | ASSET',
+    canActivate: [loggedInGuard],
+    loadComponent: () =>
+      import('./pages/change-password/change-password.component').then(m => m.ChangePasswordComponent),
+  },
+  {
     path: 'cadastro',
     loadComponent: () => import('./pages/cadastro/cadastro.component').then(m => m.CadastroComponent),
     children: [
@@ -28,12 +35,12 @@ export const routes: Routes = [
       {
         path: 'usuarios',
         title: 'Usuários | ASSET',
-        canActivate: [roleGuard('admin')],
+        canActivate: [levelGuard('basico')],
         loadComponent: () => import('./pages/cadastro/usuarios/usuarios.component').then(m => m.UsuariosComponent),
       },
       {
         path: 'pessoas',
-        canActivate: [roleGuard('admin', 'secretaria')],
+        canActivate: [levelGuard('basico')],
         children: [
           {
             path: '',
@@ -68,7 +75,7 @@ export const routes: Routes = [
   {
     path: 'ativosPatrimonio',
     title: 'Ativos e patrimônio | ASSET',
-    canActivate: [roleGuard('admin', 'secretaria')],
+    canActivate: [levelGuard('basico')],
     loadComponent: () =>
       import('./pages/ativos-patrimonio/ativos-patrimonio.component').then(m => m.AtivosPatrimonioComponent),
   },

@@ -43,11 +43,18 @@
             }
           </div>
           <div class="col-md-6">
-            <label class="form-label" for="modality">Modalidade *</label>
-            <input id="modality" class="form-control" formControlName="modality" placeholder="Ex.: Berçário, Mini grupo"
-                   [class.is-invalid]="showFormError('modalityRequired')" />
-            @if (showFormError('modalityRequired')) {
-              <div class="invalid-feedback">Informe a modalidade.</div>
+            <label class="form-label" for="modalityId">Modalidade *</label>
+            <select id="modalityId" class="form-select" formControlName="modalityId"
+                    [class.is-invalid]="showFormError('modalityRequired') || modalitiesError()">
+              <option value="">Selecione</option>
+              @for (modality of modalityOptions(); track modality.id) {
+                <option [value]="modality.id">{{ modality.name }}{{ modality.active ? '' : ' (desativada)' }}</option>
+              }
+            </select>
+            @if (modalitiesError()) {
+              <div class="invalid-feedback">{{ modalitiesError() }}</div>
+            } @else if (showFormError('modalityRequired')) {
+              <div class="invalid-feedback">Selecione a modalidade.</div>
             }
           </div>
         </div>

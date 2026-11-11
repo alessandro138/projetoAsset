@@ -13,6 +13,8 @@ export class LoginComponent {
   /** Query params: rota para voltar depois do login; aviso de falta de permissão */
   readonly voltar = input<string>();
   readonly semPermissao = input<string>();
+  /** Query param: veio da troca de senha, que encerra a sessão */
+  readonly senhaAlterada = input<string>();
 
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
@@ -39,7 +41,10 @@ export class LoginComponent {
       this.error.set(error);
       return;
     }
-    if (this.auth.hasRole('admin', 'secretaria', 'editor')) {
+    if (this.auth.mustChangePassword()) {
+      // Primeiro acesso: troca a senha provisória antes de continuar
+      this.router.navigate(['/trocar-senha'], { queryParams: { voltar: this.voltar() || null } });
+    } else if (this.auth.hasLevel('basico')) {
       this.router.navigateByUrl(this.voltar() || '/cadastro/pessoas');
     }
   }

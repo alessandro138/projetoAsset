@@ -16,7 +16,7 @@ describe('person.mapper', () => {
     types: ['beneficiario'],
     guardianId: 'g1',
     guardianRelationship: 'Mãe',
-    enrollment: { startDate: '2026-02-01', endDate: '', modality: ' Berçário ' },
+    enrollment: { startDate: '2026-02-01', endDate: '', modalityId: 'm1', modality: 'Zumba' },
     health: {
       ...emptyHealthRecord(),
       hasHealthInsurance: false,
@@ -41,7 +41,7 @@ describe('person.mapper', () => {
   });
 
   it('maps enrollment and health record', () => {
-    expect(toMatriculaInput(person.enrollment!)).toEqual({ data_inicio: '2026-02-01', data_termino: null, modalidade: 'Berçário' });
+    expect(toMatriculaInput(person.enrollment!)).toEqual({ data_inicio: '2026-02-01', data_termino: null, modalidade_servico_id: 'm1' });
     const ficha = toFichaSaudeInput(person.health!);
     expect(ficha.possui_convenio).toBeFalse();
     expect(ficha.nome_convenio).toBeNull();
@@ -53,7 +53,7 @@ describe('person.mapper', () => {
     const row: PessoaRow = { id: 'p1', foto_caminho: 'p1/foto.jpg', ...toPessoaInput(person) };
     const rebuilt = fromRows(
       row,
-      { id: 'm1', pessoa_id: 'p1', ...toMatriculaInput(person.enrollment!) },
+      { id: 'e1', pessoa_id: 'p1', ...toMatriculaInput(person.enrollment!), modalidades_servicos: { nome: 'Zumba' } },
       { pessoa_id: 'p1', ...toFichaSaudeInput(person.health!), respostas: { allergy: { answer: true, details: 'Lactose' } } },
       'https://foto',
     );
@@ -62,7 +62,7 @@ describe('person.mapper', () => {
     expect(rebuilt.birthCity).toBe('');
     expect(rebuilt.types).toEqual(['beneficiario']);
     expect(rebuilt.photo).toBe('https://foto');
-    expect(rebuilt.enrollment).toEqual({ startDate: '2026-02-01', endDate: '', modality: 'Berçário' });
+    expect(rebuilt.enrollment).toEqual({ startDate: '2026-02-01', endDate: '', modalityId: 'm1', modality: 'Zumba' });
     expect(rebuilt.health?.answers.allergy).toEqual({ answer: true, details: 'Lactose' });
     // Perguntas ausentes no banco voltam em branco
     expect(rebuilt.health?.answers.fracture).toEqual({ answer: null, details: '' });

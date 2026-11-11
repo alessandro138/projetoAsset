@@ -19,6 +19,7 @@ import {
   VaccinationStatus,
   emptyHealthRecord,
 } from '../../../../models/person.model';
+import { ModalityService } from '../../../../services/modality.service';
 import { PersonService } from '../../../../services/person.service';
 import {
   EnrollmentSheetComponent,
@@ -59,6 +60,7 @@ export class PersonFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly personService = inject(PersonService);
+  private readonly modalityService = inject(ModalityService);
 
   readonly states = STATES;
   readonly typeOptions = Object.entries(PERSON_TYPE_LABELS) as [PersonType, string][];
@@ -72,6 +74,7 @@ export class PersonFormComponent implements OnInit {
   readonly saving = signal(false);
   readonly saveError = signal('');
   readonly loading = this.personService.loading;
+  readonly modalitiesError = this.modalityService.loadError;
 
   // Para adicionar campos: inclua aqui, no template e em toPerson/toFormValue (e na ficha, se for o caso)
   readonly form = this.fb.nonNullable.group(
@@ -106,7 +109,7 @@ export class PersonFormComponent implements OnInit {
       enrollment: this.fb.nonNullable.group({
         startDate: [''],
         endDate: [''],
-        modality: ['', Validators.maxLength(100)],
+        modalityId: [''],
       }),
       health: this.fb.nonNullable.group({
         ubsRegistration: [''],
@@ -139,6 +142,12 @@ export class PersonFormComponent implements OnInit {
   readonly isMinor = computed(() => isMinor(this.formValue().birthDate ?? ''));
   readonly photo = computed(() => this.formValue().photo ?? '');
 
+  /** Modalidades ativas, mais a da matrícula em edição caso tenha sido desativada */
+  readonly modalityOptions = computed(() => {
+    const selectedId = this.formValue().enrollment?.modalityId;
+    return this.modalityService.all().filter(m => m.active || m.id === selectedId);
+  });
+
   /** Só maiores de idade podem ser tutores; exclui a própria pessoa */
   readonly guardianOptions = computed(() =>
     this.personService
@@ -160,8 +169,8 @@ export class PersonFormComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    // Lista de responsáveis e pessoa em edição vêm do banco
-    await this.personService.load();
+    // Lista de responsáveis, modalidades e pessoa em edição vêm do banco
+    await Promise.all([this.personService.load(), this.modalityService.load()]);
     const id = this.id();
     if (!id) {
       return;
@@ -268,7 +277,12 @@ export class PersonFormComponent implements OnInit {
       types: this.typeOptions.map(([type]) => type).filter(type => v.types[type]),
       guardianId: v.guardianId || null,
       guardianRelationship: v.guardianId ? v.guardianRelationship : '',
-      enrollment: beneficiary ? { ...v.enrollment, modality: v.enrollment.modality.trim() } : null,
+      enrollment: beneficiary
+        ? {
+            ...v.enrollment,
+            modality: this.modalityService.all().find(m => m.id === v.enrollment.modalityId)?.name ?? '',
+          }
+        : null,
       health: beneficiary
         ? {
             ...v.health,
@@ -301,7 +315,11 @@ export class PersonFormComponent implements OnInit {
       },
       guardianId: person.guardianId ?? '',
       guardianRelationship: person.guardianRelationship,
-      enrollment: person.enrollment ?? { startDate: '', endDate: '', modality: '' },
+      enrollment: {
+        startDate: person.enrollment?.startDate ?? '',
+        endDate: person.enrollment?.endDate ?? '',
+        modalityId: person.enrollment?.modalityId ?? '',
+      },
       health: person.health ?? emptyHealthRecord(),
       imageConsent: person.imageConsent,
       consentGiven: person.consentGiven,

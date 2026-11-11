@@ -21,7 +21,7 @@ describe('EnrollmentSheetComponent', () => {
     types: ['beneficiario'],
     guardianId: 'g1',
     guardianRelationship: 'Mãe',
-    enrollment: { startDate: `${thisYear}-02-01`, endDate: '', modality: 'Berçário' },
+    enrollment: { startDate: `${thisYear}-02-01`, endDate: '', modalityId: 'm1', modality: 'Ballet' },
     health: {
       ...emptyHealthRecord(),
       vaccination: 'atualizado',
@@ -61,7 +61,7 @@ describe('EnrollmentSheetComponent', () => {
     expect(text).toContain('Ana Souza');
     expect(text).toContain('529.982.247-25');
     expect(text).toContain('898 0011 6040 9346');
-    expect(text).toContain('Berçário');
+    expect(text).toContain('Ballet');
     expect(text).toContain('SP / São Paulo');
     expect(text).toContain('Sim – Lactose');
   });

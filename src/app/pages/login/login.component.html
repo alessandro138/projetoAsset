@@ -8,7 +8,7 @@
             <h1 class="h3 fw-bolder"><span class="text-gradient d-inline">Área restrita</span></h1>
           </div>
 
-          @if (auth.isLoggedIn() && !auth.hasRole('admin', 'secretaria', 'editor')) {
+          @if (auth.isLoggedIn() && !auth.hasLevel('basico')) {
             <div class="alert alert-warning">
               Você entrou como <strong>{{ auth.email() }}</strong>, mas seu acesso ainda não foi liberado.
               Peça a um administrador da ASSET para ativar seu usuário.
@@ -24,6 +24,12 @@
               <button type="button" class="btn btn-outline-dark" (click)="signOut()">Sair</button>
             </div>
           } @else {
+            @if (senhaAlterada()) {
+              <div class="alert alert-success d-flex gap-2" role="status">
+                <i class="bi bi-check-circle-fill"></i>
+                <div><strong>Senha alterada com sucesso!</strong><br />Entre novamente usando a nova senha.</div>
+              </div>
+            }
             <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="d-flex flex-column gap-3">
               <div>
                 <label class="form-label" for="email">E-mail</label>

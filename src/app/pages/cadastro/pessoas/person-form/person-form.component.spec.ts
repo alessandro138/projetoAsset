@@ -2,7 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { Person } from '../../../../models/person.model';
+import { ModalityService } from '../../../../services/modality.service';
 import { PersonService } from '../../../../services/person.service';
+import { InMemoryModalityService } from '../../../../testing/in-memory-modality.service';
 import { InMemoryPersonService } from '../../../../testing/in-memory-person.service';
 import { PersonFormComponent } from './person-form.component';
 
@@ -22,7 +24,7 @@ describe('PersonFormComponent', () => {
       cpf: '529.982.247-25',
       birthDate,
       types: { beneficiario: true },
-      enrollment: { startDate: `${thisYear}-02-01`, modality: 'Berçário' },
+      enrollment: { startDate: `${thisYear}-02-01`, modalityId: 'm-jiu' },
       imageConsent: true,
       consentGiven: true,
     });
@@ -53,7 +55,11 @@ describe('PersonFormComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PersonFormComponent],
-      providers: [provideRouter([{ path: '**', children: [] }]), { provide: PersonService, useClass: InMemoryPersonService }],
+      providers: [
+        provideRouter([{ path: '**', children: [] }]),
+        { provide: PersonService, useClass: InMemoryPersonService },
+        { provide: ModalityService, useClass: InMemoryModalityService },
+      ],
     }).compileComponents();
     service = TestBed.inject(PersonService) as unknown as InMemoryPersonService;
   });
@@ -66,7 +72,8 @@ describe('PersonFormComponent', () => {
     const saved = service.all()[0];
     expect(saved.cpf).toBe('52998224725');
     expect(saved.types).toEqual(['beneficiario']);
-    expect(saved.enrollment?.modality).toBe('Berçário');
+    expect(saved.enrollment?.modalityId).toBe('m-jiu');
+    expect(saved.enrollment?.modality).toBe('Jiu-jítsu');
     expect(saved.health).not.toBeNull();
   });
 
@@ -84,7 +91,7 @@ describe('PersonFormComponent', () => {
   it('does not save a beneficiary without enrollment start, modality and image consent', async () => {
     const component = create();
     fillValid(component, `${thisYear - 30}-05-10`);
-    component.form.patchValue({ enrollment: { startDate: '', modality: '' }, imageConsent: null });
+    component.form.patchValue({ enrollment: { startDate: '', modalityId: '' }, imageConsent: null });
     await component.save();
     expect(component.form.hasError('enrollmentStartRequired')).toBeTrue();
     expect(component.form.hasError('modalityRequired')).toBeTrue();
@@ -108,6 +115,13 @@ describe('PersonFormComponent', () => {
     await component.save();
     expect(service.all().length).toBe(2);
     expect(service.all()[1].guardianRelationship).toBe('Pai');
+  });
+
+  it('lists only active modalities, plus a deactivated one already in the enrollment', async () => {
+    const component = create();
+    expect(component.modalityOptions().map(m => m.name)).toEqual(['Jiu-jítsu', 'Ballet']);
+    component.form.patchValue({ enrollment: { modalityId: 'm-antiga' } });
+    expect(component.modalityOptions().map(m => m.name)).toEqual(['Jiu-jítsu', 'Ballet', 'Berçário']);
   });
 
   it('rejects a duplicated CPF', async () => {
