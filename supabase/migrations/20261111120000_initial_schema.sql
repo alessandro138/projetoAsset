@@ -4,71 +4,73 @@
 -- Como usar: Supabase → SQL Editor → New query → colar este arquivo inteiro → Run.
 -- Roda uma única vez num projeto novo (é uma transação: se algo falhar, nada é criado).
 --
+-- Nomes em português, snake_case e sem acentos (não exigem aspas no SQL).
+--
 -- Schemas:
 --   public  – tabelas usadas pelo site (expostas na API, SEMPRE com Row Level Security)
---   private – funções internas (não expostas na API)
+--   privado – funções internas (não expostas na API)
 --
--- Perfis de usuário (tabela user_profiles):
+-- Perfis de usuário (tabela perfis_usuarios):
 --   admin      – tudo, inclusive gestão de usuários
 --   secretaria – cadastro de pessoas, matrículas e ficha de saúde
 --   editor     – conteúdo da página principal
 --
 -- Depois de rodar: crie seu usuário em Authentication → Users e torne-o administrador:
---   update public.user_profiles set role = 'admin', active = true
+--   update public.perfis_usuarios set perfil = 'admin', ativo = true
 --   where id = (select id from auth.users where email = 'SEU_EMAIL');
 -- =====================================================================================
 
 begin;
 
-create schema if not exists private;
-grant usage on schema private to authenticated;
+create schema if not exists privado;
+grant usage on schema privado to authenticated;
 
 -- -------------------------------------------------------------------------------------
 -- Funções auxiliares
 -- -------------------------------------------------------------------------------------
 
 -- Mesma regra do validator do Angular: 11 dígitos, sem sequência repetida e dígitos verificadores corretos
-create function private.is_valid_cpf(cpf text)
+create function privado.cpf_valido(cpf text)
 returns boolean
 language plpgsql
 immutable
 set search_path = ''
 as $$
 declare
-  total int;
-  rest int;
+  soma int;
+  resto int;
 begin
   if cpf is null or cpf !~ '^\d{11}$' or cpf ~ '^(\d)\1{10}$' then
     return false;
   end if;
 
-  total := 0;
+  soma := 0;
   for i in 1..9 loop
-    total := total + substr(cpf, i, 1)::int * (11 - i);
+    soma := soma + substr(cpf, i, 1)::int * (11 - i);
   end loop;
-  rest := (total * 10) % 11;
-  if rest = 10 then rest := 0; end if;
-  if rest <> substr(cpf, 10, 1)::int then
+  resto := (soma * 10) % 11;
+  if resto = 10 then resto := 0; end if;
+  if resto <> substr(cpf, 10, 1)::int then
     return false;
   end if;
 
-  total := 0;
+  soma := 0;
   for i in 1..10 loop
-    total := total + substr(cpf, i, 1)::int * (12 - i);
+    soma := soma + substr(cpf, i, 1)::int * (12 - i);
   end loop;
-  rest := (total * 10) % 11;
-  if rest = 10 then rest := 0; end if;
-  return rest = substr(cpf, 11, 1)::int;
+  resto := (soma * 10) % 11;
+  if resto = 10 then resto := 0; end if;
+  return resto = substr(cpf, 11, 1)::int;
 end;
 $$;
 
-create function private.set_updated_at()
+create function privado.definir_atualizado_em()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
 begin
-  new.updated_at := now();
+  new.atualizado_em := now();
   return new;
 end;
 $$;
@@ -77,22 +79,22 @@ $$;
 -- Usuários do sistema (quem pode entrar na área restrita)
 -- -------------------------------------------------------------------------------------
 
-create table public.user_profiles (
-  id          uuid primary key references auth.users (id) on delete cascade,
-  full_name   text not null default '',
-  role        text check (role in ('admin', 'secretaria', 'editor')),
+create table public.perfis_usuarios (
+  id             uuid primary key references auth.users (id) on delete cascade,
+  nome_completo  text not null default '',
+  perfil         text check (perfil in ('admin', 'secretaria', 'editor')),
   -- Novos usuários entram inativos e sem perfil até um administrador liberar
-  active      boolean not null default false,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+  ativo          boolean not null default false,
+  criado_em      timestamptz not null default now(),
+  atualizado_em  timestamptz not null default now()
 );
 
-create trigger user_profiles_updated_at
-  before update on public.user_profiles
-  for each row execute function private.set_updated_at();
+create trigger perfis_usuarios_atualizado_em
+  before update on public.perfis_usuarios
+  for each row execute function privado.definir_atualizado_em();
 
 -- Usado pelas políticas: o usuário logado está ativo e tem um dos perfis?
-create function private.has_role(allowed text[])
+create function privado.tem_perfil(permitidos text[])
 returns boolean
 language sql
 stable
@@ -101,105 +103,105 @@ set search_path = ''
 as $$
   select exists (
     select 1
-    from public.user_profiles p
+    from public.perfis_usuarios p
     where p.id = auth.uid()
-      and p.active
-      and p.role = any (allowed)
+      and p.ativo
+      and p.perfil = any (permitidos)
   );
 $$;
 
-grant execute on function private.has_role(text[]) to authenticated;
+grant execute on function privado.tem_perfil(text[]) to authenticated;
 
 -- Cria o perfil automaticamente quando alguém é cadastrado no Authentication
-create function private.handle_new_user()
+create function privado.criar_perfil_usuario()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  insert into public.user_profiles (id, full_name)
+  insert into public.perfis_usuarios (id, nome_completo)
   values (new.id, coalesce(new.raw_user_meta_data ->> 'full_name', ''));
   return new;
 end;
 $$;
 
-create trigger on_auth_user_created
+create trigger ao_criar_usuario_auth
   after insert on auth.users
-  for each row execute function private.handle_new_user();
+  for each row execute function privado.criar_perfil_usuario();
 
 -- -------------------------------------------------------------------------------------
 -- Pessoas: condutores, beneficiários e tutores legais (sem acesso ao sistema)
 -- -------------------------------------------------------------------------------------
 
-create table public.people (
+create table public.pessoas (
   id                     uuid primary key default gen_random_uuid(),
-  full_name              text not null check (char_length(trim(full_name)) between 1 and 150),
-  cpf                    char(11) not null unique check (private.is_valid_cpf(cpf)),
-  birth_date             date not null check (birth_date <= current_date),
-  nationality            text,
-  birth_city             text,
-  birth_state            char(2) check (birth_state ~ '^[A-Z]{2}$'),
-  sus_card               char(15) check (sus_card ~ '^\d{15}$'),
-  phone                  text check (phone ~ '^\d{10,11}$'),
-  address_cep            char(8) check (address_cep ~ '^\d{8}$'),
-  address_street         text,
-  address_number         text,
-  address_complement     text,
-  address_district       text,
-  address_city           text,
-  address_state          char(2) check (address_state ~ '^[A-Z]{2}$'),
-  -- Caminho da foto 3x4 no bucket "person-photos" do Storage
-  photo_path             text,
-  is_conductor           boolean not null default false,
-  is_beneficiary         boolean not null default false,
-  is_guardian            boolean not null default false,
-  guardian_id            uuid references public.people (id) on delete restrict,
-  guardian_relationship  text,
+  nome_completo          text not null check (char_length(trim(nome_completo)) between 1 and 150),
+  cpf                    char(11) not null unique check (privado.cpf_valido(cpf)),
+  data_nascimento        date not null check (data_nascimento <= current_date),
+  naturalidade           text,
+  cidade_nascimento      text,
+  uf_nascimento          char(2) check (uf_nascimento ~ '^[A-Z]{2}$'),
+  cartao_sus             char(15) check (cartao_sus ~ '^\d{15}$'),
+  celular                text check (celular ~ '^\d{10,11}$'),
+  endereco_cep           char(8) check (endereco_cep ~ '^\d{8}$'),
+  endereco_logradouro    text,
+  endereco_numero        text,
+  endereco_complemento   text,
+  endereco_bairro        text,
+  endereco_cidade        text,
+  endereco_uf            char(2) check (endereco_uf ~ '^[A-Z]{2}$'),
+  -- Caminho da foto 3x4 no bucket "fotos-pessoas" do Storage
+  foto_caminho           text,
+  eh_condutor            boolean not null default false,
+  eh_beneficiario        boolean not null default false,
+  eh_tutor               boolean not null default false,
+  responsavel_id         uuid references public.pessoas (id) on delete restrict,
+  grau_parentesco        text,
   -- Autorização de uso de imagem e voz (beneficiários); null = não respondida
-  image_consent          boolean,
+  autoriza_imagem        boolean,
   -- Consentimento LGPD (dado pelo responsável, no caso de menores)
-  lgpd_consent           boolean not null check (lgpd_consent),
-  lgpd_consent_at        timestamptz not null default now(),
-  created_by             uuid default auth.uid() references auth.users (id) on delete set null,
-  created_at             timestamptz not null default now(),
-  updated_at             timestamptz not null default now(),
+  consentimento_lgpd     boolean not null check (consentimento_lgpd),
+  consentimento_lgpd_em  timestamptz not null default now(),
+  criado_por             uuid default auth.uid() references auth.users (id) on delete set null,
+  criado_em              timestamptz not null default now(),
+  atualizado_em          timestamptz not null default now(),
 
-  constraint people_has_type check (is_conductor or is_beneficiary or is_guardian),
-  constraint people_guardian_not_self check (guardian_id <> id)
+  constraint pessoas_tem_tipo check (eh_condutor or eh_beneficiario or eh_tutor),
+  constraint pessoas_responsavel_nao_e_a_propria check (responsavel_id <> id)
 );
 
-create index people_full_name_idx on public.people (full_name);
-create index people_guardian_id_idx on public.people (guardian_id);
+create index pessoas_nome_completo_idx on public.pessoas (nome_completo);
+create index pessoas_responsavel_id_idx on public.pessoas (responsavel_id);
 
-comment on table public.people is 'Dados pessoais (LGPD): acesso só para admin e secretaria.';
+comment on table public.pessoas is 'Dados pessoais (LGPD): acesso só para admin e secretaria.';
 
-create trigger people_updated_at
-  before update on public.people
-  for each row execute function private.set_updated_at();
+create trigger pessoas_atualizado_em
+  before update on public.pessoas
+  for each row execute function privado.definir_atualizado_em();
 
 -- Beneficiário menor de idade precisa de responsável cadastrado e maior de idade
-create function private.check_person_guardian()
+create function privado.validar_responsavel()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
-  guardian_birth date;
+  nascimento_responsavel date;
 begin
-  if new.is_beneficiary
-     and new.birth_date > current_date - interval '18 years'
-     and new.guardian_id is null then
+  if new.eh_beneficiario
+     and new.data_nascimento > current_date - interval '18 years'
+     and new.responsavel_id is null then
     raise exception 'Beneficiário menor de idade precisa de responsável (tutor legal).';
   end if;
 
-  if new.guardian_id is not null then
-    select birth_date into guardian_birth from public.people where id = new.guardian_id;
-    if guardian_birth is null then
+  if new.responsavel_id is not null then
+    select data_nascimento into nascimento_responsavel from public.pessoas where id = new.responsavel_id;
+    if nascimento_responsavel is null then
       raise exception 'Responsável não encontrado.';
     end if;
-    if guardian_birth > current_date - interval '18 years' then
+    if nascimento_responsavel > current_date - interval '18 years' then
       raise exception 'O responsável precisa ser maior de idade.';
     end if;
   end if;
@@ -208,190 +210,190 @@ begin
 end;
 $$;
 
-create trigger people_check_guardian
-  before insert or update on public.people
-  for each row execute function private.check_person_guardian();
+create trigger pessoas_validar_responsavel
+  before insert or update on public.pessoas
+  for each row execute function privado.validar_responsavel();
 
 -- -------------------------------------------------------------------------------------
 -- Matrículas dos beneficiários (uma pessoa pode ter várias ao longo do tempo)
 -- -------------------------------------------------------------------------------------
 
-create table public.enrollments (
-  id          uuid primary key default gen_random_uuid(),
-  person_id   uuid not null references public.people (id) on delete cascade,
-  start_date  date not null,
-  end_date    date,
-  modality    text not null check (char_length(trim(modality)) between 1 and 100),
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now(),
+create table public.matriculas (
+  id             uuid primary key default gen_random_uuid(),
+  pessoa_id      uuid not null references public.pessoas (id) on delete cascade,
+  data_inicio    date not null,
+  data_termino   date,
+  modalidade     text not null check (char_length(trim(modalidade)) between 1 and 100),
+  criado_em      timestamptz not null default now(),
+  atualizado_em  timestamptz not null default now(),
 
-  constraint enrollments_end_after_start check (end_date is null or end_date >= start_date)
+  constraint matriculas_termino_apos_inicio check (data_termino is null or data_termino >= data_inicio)
 );
 
-create index enrollments_person_id_idx on public.enrollments (person_id);
+create index matriculas_pessoa_id_idx on public.matriculas (pessoa_id);
 
-create trigger enrollments_updated_at
-  before update on public.enrollments
-  for each row execute function private.set_updated_at();
+create trigger matriculas_atualizado_em
+  before update on public.matriculas
+  for each row execute function privado.definir_atualizado_em();
 
 -- -------------------------------------------------------------------------------------
 -- Ficha de saúde (uma por beneficiário)
 -- -------------------------------------------------------------------------------------
 
-create table public.health_records (
-  person_id              uuid primary key references public.people (id) on delete cascade,
-  ubs_registration       text,
-  nearest_health_unit    text,
-  has_health_insurance   boolean,
-  health_insurance_name  text,
-  vaccination            text check (vaccination in ('atualizado', 'atrasado', 'sem-informacao')),
-  lives_with             text check (lives_with in ('mae-e-pai', 'pai', 'mae', 'outros')),
-  lives_with_other       text,
-  birth_type             text check (birth_type in ('normal', 'cesarea', 'forceps', 'prematuro')),
+create table public.fichas_saude (
+  pessoa_id              uuid primary key references public.pessoas (id) on delete cascade,
+  matricula_ubs          text,
+  unidade_saude_proxima  text,
+  possui_convenio        boolean,
+  nome_convenio          text,
+  calendario_vacinal     text check (calendario_vacinal in ('atualizado', 'atrasado', 'sem-informacao')),
+  vive_com               text check (vive_com in ('mae-e-pai', 'pai', 'mae', 'outros')),
+  vive_com_outros        text,
+  tipo_parto             text check (tipo_parto in ('normal', 'cesarea', 'forceps', 'prematuro')),
   -- Perguntas Sim/Não (HEALTH_QUESTIONS no Angular): { "allergy": { "answer": true, "details": "Lactose" }, ... }
-  answers                jsonb not null default '{}'::jsonb check (jsonb_typeof(answers) = 'object'),
-  updated_by             uuid default auth.uid() references auth.users (id) on delete set null,
-  created_at             timestamptz not null default now(),
-  updated_at             timestamptz not null default now()
+  respostas              jsonb not null default '{}'::jsonb check (jsonb_typeof(respostas) = 'object'),
+  atualizado_por         uuid default auth.uid() references auth.users (id) on delete set null,
+  criado_em              timestamptz not null default now(),
+  atualizado_em          timestamptz not null default now()
 );
 
-comment on table public.health_records is 'Dado pessoal sensível (LGPD, art. 11): acesso só para admin e secretaria.';
+comment on table public.fichas_saude is 'Dado pessoal sensível (LGPD, art. 11): acesso só para admin e secretaria.';
 
-create trigger health_records_updated_at
-  before update on public.health_records
-  for each row execute function private.set_updated_at();
+create trigger fichas_saude_atualizado_em
+  before update on public.fichas_saude
+  for each row execute function privado.definir_atualizado_em();
 
 -- -------------------------------------------------------------------------------------
 -- Conteúdo da página principal (uma linha; estrutura = SiteContent do Angular)
 -- -------------------------------------------------------------------------------------
 
-create table public.site_content (
-  id          smallint primary key default 1 check (id = 1),
-  content     jsonb not null default '{}'::jsonb check (jsonb_typeof(content) = 'object'),
-  updated_by  uuid default auth.uid() references auth.users (id) on delete set null,
-  updated_at  timestamptz not null default now()
+create table public.conteudo_site (
+  id              smallint primary key default 1 check (id = 1),
+  conteudo        jsonb not null default '{}'::jsonb check (jsonb_typeof(conteudo) = 'object'),
+  atualizado_por  uuid default auth.uid() references auth.users (id) on delete set null,
+  atualizado_em   timestamptz not null default now()
 );
 
-create trigger site_content_updated_at
-  before update on public.site_content
-  for each row execute function private.set_updated_at();
+create trigger conteudo_site_atualizado_em
+  before update on public.conteudo_site
+  for each row execute function privado.definir_atualizado_em();
 
 -- Conteúdo vazio: o site usa o conteúdo padrão até o administrador salvar o primeiro
-insert into public.site_content (id) values (1);
+insert into public.conteudo_site (id) values (1);
 
 -- -------------------------------------------------------------------------------------
 -- Row Level Security: sem política, ninguém acessa
 -- -------------------------------------------------------------------------------------
 
-alter table public.user_profiles  enable row level security;
-alter table public.people         enable row level security;
-alter table public.enrollments    enable row level security;
-alter table public.health_records enable row level security;
-alter table public.site_content   enable row level security;
+alter table public.perfis_usuarios enable row level security;
+alter table public.pessoas         enable row level security;
+alter table public.matriculas      enable row level security;
+alter table public.fichas_saude    enable row level security;
+alter table public.conteudo_site   enable row level security;
 
 -- Visitantes não autenticados nunca tocam em dados pessoais (proteção extra além das políticas)
-revoke all on public.user_profiles, public.people, public.enrollments, public.health_records from anon;
-revoke insert, update, delete on public.site_content from anon;
+revoke all on public.perfis_usuarios, public.pessoas, public.matriculas, public.fichas_saude from anon;
+revoke insert, update, delete on public.conteudo_site from anon;
 
--- user_profiles: cada um vê o próprio perfil; só admin vê todos e altera (ninguém promove a si mesmo)
+-- perfis_usuarios: cada um vê o próprio perfil; só admin vê todos e altera (ninguém promove a si mesmo)
 create policy "Perfis: ver o próprio ou admin vê todos"
-  on public.user_profiles for select to authenticated
-  using (id = (select auth.uid()) or (select private.has_role(array['admin'])));
+  on public.perfis_usuarios for select to authenticated
+  using (id = (select auth.uid()) or (select privado.tem_perfil(array['admin'])));
 
 create policy "Perfis: admin altera"
-  on public.user_profiles for update to authenticated
-  using ((select private.has_role(array['admin'])))
-  with check ((select private.has_role(array['admin'])));
+  on public.perfis_usuarios for update to authenticated
+  using ((select privado.tem_perfil(array['admin'])))
+  with check ((select privado.tem_perfil(array['admin'])));
 
 create policy "Perfis: admin exclui"
-  on public.user_profiles for delete to authenticated
-  using ((select private.has_role(array['admin'])));
+  on public.perfis_usuarios for delete to authenticated
+  using ((select privado.tem_perfil(array['admin'])));
 
--- people: admin e secretaria leem, criam e alteram; só admin exclui
+-- pessoas: admin e secretaria leem, criam e alteram; só admin exclui
 create policy "Pessoas: equipe de cadastro lê"
-  on public.people for select to authenticated
-  using ((select private.has_role(array['admin', 'secretaria'])));
+  on public.pessoas for select to authenticated
+  using ((select privado.tem_perfil(array['admin', 'secretaria'])));
 
 create policy "Pessoas: equipe de cadastro cria"
-  on public.people for insert to authenticated
-  with check ((select private.has_role(array['admin', 'secretaria'])));
+  on public.pessoas for insert to authenticated
+  with check ((select privado.tem_perfil(array['admin', 'secretaria'])));
 
 create policy "Pessoas: equipe de cadastro altera"
-  on public.people for update to authenticated
-  using ((select private.has_role(array['admin', 'secretaria'])))
-  with check ((select private.has_role(array['admin', 'secretaria'])));
+  on public.pessoas for update to authenticated
+  using ((select privado.tem_perfil(array['admin', 'secretaria'])))
+  with check ((select privado.tem_perfil(array['admin', 'secretaria'])));
 
 create policy "Pessoas: admin exclui"
-  on public.people for delete to authenticated
-  using ((select private.has_role(array['admin'])));
+  on public.pessoas for delete to authenticated
+  using ((select privado.tem_perfil(array['admin'])));
 
--- enrollments: mesmas regras de people
+-- matriculas: mesmas regras de pessoas
 create policy "Matrículas: equipe de cadastro lê"
-  on public.enrollments for select to authenticated
-  using ((select private.has_role(array['admin', 'secretaria'])));
+  on public.matriculas for select to authenticated
+  using ((select privado.tem_perfil(array['admin', 'secretaria'])));
 
 create policy "Matrículas: equipe de cadastro cria"
-  on public.enrollments for insert to authenticated
-  with check ((select private.has_role(array['admin', 'secretaria'])));
+  on public.matriculas for insert to authenticated
+  with check ((select privado.tem_perfil(array['admin', 'secretaria'])));
 
 create policy "Matrículas: equipe de cadastro altera"
-  on public.enrollments for update to authenticated
-  using ((select private.has_role(array['admin', 'secretaria'])))
-  with check ((select private.has_role(array['admin', 'secretaria'])));
+  on public.matriculas for update to authenticated
+  using ((select privado.tem_perfil(array['admin', 'secretaria'])))
+  with check ((select privado.tem_perfil(array['admin', 'secretaria'])));
 
 create policy "Matrículas: admin exclui"
-  on public.enrollments for delete to authenticated
-  using ((select private.has_role(array['admin'])));
+  on public.matriculas for delete to authenticated
+  using ((select privado.tem_perfil(array['admin'])));
 
--- health_records: mesmas regras de people (editor nunca vê dados de saúde)
+-- fichas_saude: mesmas regras de pessoas (editor nunca vê dados de saúde)
 create policy "Saúde: equipe de cadastro lê"
-  on public.health_records for select to authenticated
-  using ((select private.has_role(array['admin', 'secretaria'])));
+  on public.fichas_saude for select to authenticated
+  using ((select privado.tem_perfil(array['admin', 'secretaria'])));
 
 create policy "Saúde: equipe de cadastro cria"
-  on public.health_records for insert to authenticated
-  with check ((select private.has_role(array['admin', 'secretaria'])));
+  on public.fichas_saude for insert to authenticated
+  with check ((select privado.tem_perfil(array['admin', 'secretaria'])));
 
 create policy "Saúde: equipe de cadastro altera"
-  on public.health_records for update to authenticated
-  using ((select private.has_role(array['admin', 'secretaria'])))
-  with check ((select private.has_role(array['admin', 'secretaria'])));
+  on public.fichas_saude for update to authenticated
+  using ((select privado.tem_perfil(array['admin', 'secretaria'])))
+  with check ((select privado.tem_perfil(array['admin', 'secretaria'])));
 
 create policy "Saúde: admin exclui"
-  on public.health_records for delete to authenticated
-  using ((select private.has_role(array['admin'])));
+  on public.fichas_saude for delete to authenticated
+  using ((select privado.tem_perfil(array['admin'])));
 
--- site_content: qualquer visitante lê (é o site público); admin e editor alteram
+-- conteudo_site: qualquer visitante lê (é o site público); admin e editor alteram
 create policy "Conteúdo do site: leitura pública"
-  on public.site_content for select to anon, authenticated
+  on public.conteudo_site for select to anon, authenticated
   using (true);
 
 create policy "Conteúdo do site: admin e editor alteram"
-  on public.site_content for update to authenticated
-  using ((select private.has_role(array['admin', 'editor'])))
-  with check ((select private.has_role(array['admin', 'editor'])));
+  on public.conteudo_site for update to authenticated
+  using ((select privado.tem_perfil(array['admin', 'editor'])))
+  with check ((select privado.tem_perfil(array['admin', 'editor'])));
 
 -- -------------------------------------------------------------------------------------
 -- Storage: fotos 3x4 (bucket privado; máx. 2 MB; só imagens)
 -- -------------------------------------------------------------------------------------
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('person-photos', 'person-photos', false, 2097152, array['image/jpeg', 'image/png', 'image/webp']);
+values ('fotos-pessoas', 'fotos-pessoas', false, 2097152, array['image/jpeg', 'image/png', 'image/webp']);
 
 create policy "Fotos: equipe de cadastro lê"
   on storage.objects for select to authenticated
-  using (bucket_id = 'person-photos' and (select private.has_role(array['admin', 'secretaria'])));
+  using (bucket_id = 'fotos-pessoas' and (select privado.tem_perfil(array['admin', 'secretaria'])));
 
 create policy "Fotos: equipe de cadastro envia"
   on storage.objects for insert to authenticated
-  with check (bucket_id = 'person-photos' and (select private.has_role(array['admin', 'secretaria'])));
+  with check (bucket_id = 'fotos-pessoas' and (select privado.tem_perfil(array['admin', 'secretaria'])));
 
 create policy "Fotos: equipe de cadastro substitui"
   on storage.objects for update to authenticated
-  using (bucket_id = 'person-photos' and (select private.has_role(array['admin', 'secretaria'])));
+  using (bucket_id = 'fotos-pessoas' and (select privado.tem_perfil(array['admin', 'secretaria'])));
 
 create policy "Fotos: equipe de cadastro exclui"
   on storage.objects for delete to authenticated
-  using (bucket_id = 'person-photos' and (select private.has_role(array['admin', 'secretaria'])));
+  using (bucket_id = 'fotos-pessoas' and (select privado.tem_perfil(array['admin', 'secretaria'])));
 
 commit;
