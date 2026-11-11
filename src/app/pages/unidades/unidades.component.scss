@@ -1,0 +1,33 @@
+.unit-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--bs-box-shadow) !important;
+  }
+
+  img {
+    object-fit: cover;
+  }
+
+  h2 {
+    color: var(--bs-primary);
+  }
+}
+
+// Celular: card horizontal (foto à esquerda), para a lista não ficar com uma foto grande por tela
+@media (max-width: 575.98px) {
+  .unit-card {
+    flex-direction: row;
+  }
+
+  .unit-photo {
+    flex: 0 0 38%;
+    max-width: 38%;
+
+    // A foto acompanha a altura do card em vez de manter a proporção 4:3
+    &::before {
+      padding-top: 0;
+    }
+  }
+}

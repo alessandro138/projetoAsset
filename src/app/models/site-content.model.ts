@@ -33,6 +33,18 @@ export interface Partner {
   url: string;
 }
 
+/** Unidade da ASSET (página /unidades) */
+export interface Unit {
+  id: string;
+  name: string;
+  neighborhood: string;
+  address: string;
+  /** 'AAAAA-AAA' ou vazio; melhora a busca no mapa */
+  cep: string;
+  phone: string;
+  imageUrl: string;
+}
+
 export interface SocialLinks {
   facebook: string;
   instagram: string;
@@ -76,6 +88,11 @@ export interface SiteContent {
   partners: {
     title: string;
     items: Partner[];
+  };
+  units: {
+    title: string;
+    intro: string;
+    items: Unit[];
   };
   social: SocialLinks;
   footer: {

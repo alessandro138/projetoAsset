@@ -11,6 +11,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/principal/principal.component').then(m => m.PrincipalComponent),
   },
   {
+    path: 'unidades',
+    title: 'Unidades | ASSET',
+    loadComponent: () => import('./pages/unidades/unidades.component').then(m => m.UnidadesComponent),
+  },
+  {
     path: 'login',
     title: 'Área restrita | ASSET',
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent),
