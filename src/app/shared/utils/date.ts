@@ -10,6 +10,16 @@ export function parseIsoDate(value: string | null | undefined): Date | null {
   return isNaN(date.getTime()) ? null : date;
 }
 
+/** 'AAAA-MM-DD' → 'DD/MM/AAAA'; vazio se a data for inválida */
+export function formatIsoDate(value: string | null | undefined): string {
+  const date = parseIsoDate(value);
+  if (!date) {
+    return '';
+  }
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+}
+
 export function ageOn(birthDate: string, today: Date = new Date()): number | null {
   const birth = parseIsoDate(birthDate);
   if (!birth) {

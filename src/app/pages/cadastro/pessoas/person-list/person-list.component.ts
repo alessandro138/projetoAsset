@@ -24,6 +24,7 @@ export class PersonListComponent {
         age: ageOn(p.birthDate),
         types: p.types.map(t => PERSON_TYPE_LABELS[t]).join(', '),
         guardian: p.guardianId ? this.personService.getById(p.guardianId)?.fullName ?? '' : '',
+        isBeneficiary: p.types.includes('beneficiario'),
       })),
   );
 }

@@ -31,6 +31,14 @@ export const routes: Routes = [
           import('./pages/cadastro/pessoas/person-form/person-form.component').then(m => m.PersonFormComponent),
       },
       {
+        path: 'pessoas/:id/ficha',
+        title: 'Ficha de matrícula | ASSET',
+        loadComponent: () =>
+          import('./pages/cadastro/pessoas/enrollment-sheet-page/enrollment-sheet-page.component').then(
+            m => m.EnrollmentSheetPageComponent,
+          ),
+      },
+      {
         path: 'pessoas/:id',
         title: 'Editar pessoa | ASSET',
         loadComponent: () =>

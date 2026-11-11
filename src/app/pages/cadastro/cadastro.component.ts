@@ -6,7 +6,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <section class="container px-4 px-lg-5 py-5">
-      <ul class="nav nav-underline mb-4">
+      <ul class="nav nav-underline mb-4 d-print-none">
         <li class="nav-item"><a class="nav-link" routerLink="pessoas" routerLinkActive="active">Pessoas</a></li>
         <li class="nav-item"><a class="nav-link" routerLink="usuarios" routerLinkActive="active">Usuários</a></li>
       </ul>

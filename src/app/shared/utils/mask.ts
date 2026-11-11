@@ -20,7 +20,7 @@ export function applyPattern(value: string, pattern: string): string {
   return result;
 }
 
-export type MaskType = 'cpf' | 'cep' | 'phone';
+export type MaskType = 'cpf' | 'cep' | 'phone' | 'sus';
 
 export function formatMask(value: string, type: MaskType): string {
   switch (type) {
@@ -28,6 +28,9 @@ export function formatMask(value: string, type: MaskType): string {
       return applyPattern(value, '000.000.000-00');
     case 'cep':
       return applyPattern(value, '00000-000');
+    case 'sus':
+      // Cartão Nacional de Saúde: 15 dígitos
+      return applyPattern(value, '000 0000 0000 0000');
     case 'phone':
       // Fixo (10 dígitos) ou celular (11 dígitos)
       return onlyDigits(value).length > 10

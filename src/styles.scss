@@ -103,6 +103,23 @@ app-root {
   }
 }
 
+// Impressão (ficha de matrícula): só o conteúdo da página, sem menu, rodapé e margens da tela
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm 15mm;
+  }
+
+  body {
+    background: $white;
+  }
+
+  main .container {
+    max-width: none;
+    padding: 0 !important;
+  }
+}
+
 // Seções ancoradas não ficam coladas no topo ao navegar por #sobre, #projetos
 section[id] {
   scroll-margin-top: 1rem;

@@ -29,7 +29,12 @@
               <td>{{ row.age }}</td>
               <td>{{ row.types }}</td>
               <td>{{ row.guardian }}</td>
-              <td class="text-end">
+              <td class="text-end text-nowrap">
+                @if (row.isBeneficiary) {
+                  <a [routerLink]="[row.id, 'ficha']" class="btn btn-sm btn-outline-secondary me-1" title="Ficha de matrícula">
+                    <i class="bi bi-printer me-1"></i>Ficha
+                  </a>
+                }
                 <a [routerLink]="row.id" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil me-1"></i>Editar</a>
               </td>
             </tr>

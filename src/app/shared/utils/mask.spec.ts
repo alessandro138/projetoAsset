@@ -11,6 +11,10 @@ describe('mask utils', () => {
     expect(formatMask('70000a000', 'cep')).toBe('70000-000');
   });
 
+  it('formats the SUS card number', () => {
+    expect(formatMask('898001160409346', 'sus')).toBe('898 0011 6040 9346');
+  });
+
   it('formats landline and mobile phones', () => {
     expect(formatMask('6133334444', 'phone')).toBe('(61) 3333-4444');
     expect(formatMask('61999998888', 'phone')).toBe('(61) 99999-8888');

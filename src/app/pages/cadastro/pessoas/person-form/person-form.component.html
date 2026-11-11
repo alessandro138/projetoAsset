@@ -1,54 +1,8 @@
+<div class="d-print-none">
 <h1 class="fw-bolder mb-4"><span class="text-gradient d-inline">{{ id() ? 'Editar pessoa' : 'Nova pessoa' }}</span></h1>
 
 <form [formGroup]="form" (ngSubmit)="save()" novalidate class="d-flex flex-column gap-4">
-  <div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-4">
-      <h2 class="h5 fw-bolder text-primary mb-3">Dados pessoais</h2>
-      <div class="row g-3">
-        <div class="col-12">
-          <label class="form-label" for="fullName">Nome completo *</label>
-          <input id="fullName" class="form-control" formControlName="fullName" autocomplete="off"
-                 [class.is-invalid]="showError('fullName')" />
-          @if (showError('fullName', 'required')) {
-            <div class="invalid-feedback">Informe o nome completo.</div>
-          }
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label" for="cpf">CPF *</label>
-          <input id="cpf" class="form-control" formControlName="cpf" appMask="cpf" inputmode="numeric"
-                 placeholder="000.000.000-00" [class.is-invalid]="showError('cpf')" />
-          @if (showError('cpf', 'required')) {
-            <div class="invalid-feedback">Informe o CPF.</div>
-          } @else if (showError('cpf', 'cpf')) {
-            <div class="invalid-feedback">CPF inválido. Confira os números digitados.</div>
-          } @else if (showError('cpf', 'cpfTaken')) {
-            <div class="invalid-feedback">Já existe uma pessoa cadastrada com este CPF.</div>
-          }
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label" for="birthDate">Data de nascimento *</label>
-          <input id="birthDate" type="date" class="form-control" formControlName="birthDate"
-                 [class.is-invalid]="showError('birthDate')" />
-          @if (showError('birthDate', 'required')) {
-            <div class="invalid-feedback">Informe a data de nascimento.</div>
-          } @else if (showError('birthDate', 'futureDate')) {
-            <div class="invalid-feedback">A data de nascimento não pode ser no futuro.</div>
-          } @else if (showError('birthDate', 'date')) {
-            <div class="invalid-feedback">Data inválida.</div>
-          }
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label" for="phone">Telefone</label>
-          <input id="phone" class="form-control" formControlName="phone" appMask="phone" inputmode="tel"
-                 placeholder="(00) 00000-0000" />
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <!-- Tipo -->
   <div class="card border-0 shadow-sm rounded-4" formGroupName="types">
     <div class="card-body p-4">
       <h2 class="h5 fw-bolder text-primary mb-3">Tipo *</h2>
@@ -66,37 +20,144 @@
     </div>
   </div>
 
+  <!-- Matrícula (beneficiário) -->
   @if (isBeneficiary()) {
-    <div class="card border-0 shadow-sm rounded-4">
+    <div class="card border-0 shadow-sm rounded-4" formGroupName="enrollment">
       <div class="card-body p-4">
-        <h2 class="h5 fw-bolder text-primary mb-3">Tutor legal</h2>
-        @if (isMinor()) {
-          <div class="alert alert-info py-2">Beneficiário menor de idade: o tutor legal é obrigatório.</div>
-        }
-        <label class="form-label" for="guardianId">Tutor legal{{ isMinor() ? ' *' : '' }}</label>
-        <select id="guardianId" class="form-select" formControlName="guardianId"
-                [class.is-invalid]="showFormError('guardianRequired') || showFormError('guardianMinor') || showFormError('guardianNotFound')">
-          <option value="">Selecione</option>
-          @for (person of guardianOptions(); track person.id) {
-            <option [value]="person.id">{{ person.fullName }}</option>
-          }
-        </select>
-        @if (showFormError('guardianRequired')) {
-          <div class="invalid-feedback">Selecione o tutor legal do beneficiário menor de idade.</div>
-        } @else if (showFormError('guardianMinor')) {
-          <div class="invalid-feedback">O tutor legal precisa ser maior de idade.</div>
-        } @else if (showFormError('guardianNotFound')) {
-          <div class="invalid-feedback">Tutor legal não encontrado. Selecione outra pessoa.</div>
-        }
-        @if (guardianOptions().length === 0) {
-          <div class="form-text">
-            Nenhuma pessoa maior de idade cadastrada. Cadastre o tutor primeiro (marque o tipo "Tutor legal").
+        <h2 class="h5 fw-bolder text-primary mb-3">Matrícula</h2>
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label" for="startDate">Início *</label>
+            <input id="startDate" type="date" class="form-control" formControlName="startDate"
+                   [class.is-invalid]="showFormError('enrollmentStartRequired')" />
+            @if (showFormError('enrollmentStartRequired')) {
+              <div class="invalid-feedback">Informe a data de início.</div>
+            }
           </div>
-        }
+          <div class="col-md-3">
+            <label class="form-label" for="endDate">Término</label>
+            <input id="endDate" type="date" class="form-control" formControlName="endDate"
+                   [class.is-invalid]="showFormError('enrollmentEndBeforeStart')" />
+            @if (showFormError('enrollmentEndBeforeStart')) {
+              <div class="invalid-feedback">O término não pode ser antes do início.</div>
+            }
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="modality">Modalidade *</label>
+            <input id="modality" class="form-control" formControlName="modality" placeholder="Ex.: Berçário, Mini grupo"
+                   [class.is-invalid]="showFormError('modalityRequired')" />
+            @if (showFormError('modalityRequired')) {
+              <div class="invalid-feedback">Informe a modalidade.</div>
+            }
+          </div>
+        </div>
       </div>
     </div>
   }
 
+  <!-- Dados pessoais -->
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-4">
+      <h2 class="h5 fw-bolder text-primary mb-3">Dados pessoais</h2>
+      <div class="row g-3">
+        <div class="col-md-auto d-flex flex-column align-items-center gap-2">
+          <div class="photo-preview rounded-3 border d-flex align-items-center justify-content-center overflow-hidden">
+            @if (photo()) {
+              <img [src]="photo()" alt="Foto 3x4" />
+            } @else {
+              <i class="bi bi-person-bounding-box fs-1 text-muted"></i>
+            }
+          </div>
+          <label class="btn btn-sm btn-outline-primary mb-0">
+            <i class="bi bi-camera me-1"></i>{{ photo() ? 'Trocar foto' : 'Foto 3x4' }}
+            <input type="file" accept="image/*" class="d-none" (change)="onPhotoSelected($event)" />
+          </label>
+          @if (photo()) {
+            <button type="button" class="btn btn-sm btn-link text-danger p-0" (click)="removePhoto()">Remover</button>
+          }
+          @if (photoError()) {
+            <div class="text-danger small text-center">{{ photoError() }}</div>
+          }
+        </div>
+
+        <div class="col">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="fullName">Nome completo *</label>
+              <input id="fullName" class="form-control" formControlName="fullName" autocomplete="off"
+                     [class.is-invalid]="showError('fullName')" />
+              @if (showError('fullName', 'required')) {
+                <div class="invalid-feedback">Informe o nome completo.</div>
+              }
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label" for="birthDate">Data de nascimento *</label>
+              <input id="birthDate" type="date" class="form-control" formControlName="birthDate"
+                     [class.is-invalid]="showError('birthDate')" />
+              @if (showError('birthDate', 'required')) {
+                <div class="invalid-feedback">Informe a data de nascimento.</div>
+              } @else if (showError('birthDate', 'futureDate')) {
+                <div class="invalid-feedback">A data de nascimento não pode ser no futuro.</div>
+              } @else if (showError('birthDate', 'date')) {
+                <div class="invalid-feedback">Data inválida.</div>
+              }
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label" for="cpf">CPF *</label>
+              <input id="cpf" class="form-control" formControlName="cpf" appMask="cpf" inputmode="numeric"
+                     placeholder="000.000.000-00" [class.is-invalid]="showError('cpf')" />
+              @if (showError('cpf', 'required')) {
+                <div class="invalid-feedback">Informe o CPF.</div>
+              } @else if (showError('cpf', 'cpf')) {
+                <div class="invalid-feedback">CPF inválido. Confira os números digitados.</div>
+              } @else if (showError('cpf', 'cpfTaken')) {
+                <div class="invalid-feedback">Já existe uma pessoa cadastrada com este CPF.</div>
+              }
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label" for="phone">Celular / WhatsApp</label>
+              <input id="phone" class="form-control" formControlName="phone" appMask="phone" inputmode="tel"
+                     placeholder="(00) 00000-0000" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label" for="nationality">Naturalidade</label>
+              <input id="nationality" class="form-control" formControlName="nationality" placeholder="Ex.: Brasileira" />
+            </div>
+
+            <div class="col-md-5">
+              <label class="form-label" for="birthCity">Cidade em que nasceu</label>
+              <input id="birthCity" class="form-control" formControlName="birthCity" />
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label" for="birthState">Estado (UF)</label>
+              <select id="birthState" class="form-select" formControlName="birthState">
+                <option value="">--</option>
+                @for (uf of states; track uf) {
+                  <option [value]="uf">{{ uf }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="susCard">N° Cartão do SUS</label>
+              <input id="susCard" class="form-control" formControlName="susCard" appMask="sus" inputmode="numeric"
+                     placeholder="000 0000 0000 0000" [class.is-invalid]="showError('susCard')" />
+              @if (showError('susCard', 'pattern')) {
+                <div class="invalid-feedback">O Cartão do SUS tem 15 números.</div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Endereço -->
   <div class="card border-0 shadow-sm rounded-4" formGroupName="address">
     <div class="card-body p-4">
       <h2 class="h5 fw-bolder text-primary mb-3">Endereço</h2>
@@ -138,14 +199,184 @@
     </div>
   </div>
 
+  <!-- Responsável (beneficiário) -->
+  @if (isBeneficiary()) {
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+        <h2 class="h5 fw-bolder text-primary mb-3">Dados do responsável</h2>
+        @if (isMinor()) {
+          <div class="alert alert-info py-2">Beneficiário menor de idade: o responsável (tutor legal) é obrigatório.</div>
+        }
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label class="form-label" for="guardianId">Responsável{{ isMinor() ? ' *' : '' }}</label>
+            <select id="guardianId" class="form-select" formControlName="guardianId"
+                    [class.is-invalid]="showFormError('guardianRequired') || showFormError('guardianMinor') || showFormError('guardianNotFound')">
+              <option value="">Selecione</option>
+              @for (person of guardianOptions(); track person.id) {
+                <option [value]="person.id">{{ person.fullName }}</option>
+              }
+            </select>
+            @if (showFormError('guardianRequired')) {
+              <div class="invalid-feedback">Selecione o responsável pelo beneficiário menor de idade.</div>
+            } @else if (showFormError('guardianMinor')) {
+              <div class="invalid-feedback">O responsável precisa ser maior de idade.</div>
+            } @else if (showFormError('guardianNotFound')) {
+              <div class="invalid-feedback">Responsável não encontrado. Selecione outra pessoa.</div>
+            }
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="guardianRelationship">Grau de parentesco</label>
+            <select id="guardianRelationship" class="form-select" formControlName="guardianRelationship">
+              <option value="">Selecione</option>
+              @for (relationship of relationships; track relationship) {
+                <option [value]="relationship">{{ relationship }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="form-text">
+          @if (guardianOptions().length === 0) {
+            Nenhuma pessoa maior de idade cadastrada. Cadastre o responsável primeiro (marque o tipo "Tutor legal").
+          } @else {
+            CPF, endereço e telefone do responsável vêm do cadastro dele.
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Ficha de saúde (beneficiário) -->
+  @if (isBeneficiary()) {
+    <div class="card border-0 shadow-sm rounded-4" formGroupName="health">
+      <div class="card-body p-4">
+        <h2 class="h5 fw-bolder text-primary mb-1">Ficha de saúde</h2>
+        <p class="small text-muted mb-3">
+          <i class="bi bi-shield-lock me-1"></i>Dados de saúde são sensíveis pela LGPD: preencha só o necessário.
+        </p>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label" for="ubsRegistration">Matrícula UBS</label>
+            <input id="ubsRegistration" class="form-control" formControlName="ubsRegistration" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="nearestHealthUnit">Unidade de saúde mais próxima</label>
+            <input id="nearestHealthUnit" class="form-control" formControlName="nearestHealthUnit" />
+          </div>
+          <div class="col-md-6">
+            <span class="form-label d-block">Possui convênio médico?</span>
+            <div class="form-check form-check-inline">
+              <input id="insurance-yes" class="form-check-input" type="radio" formControlName="hasHealthInsurance" [value]="true" />
+              <label class="form-check-label" for="insurance-yes">Sim</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input id="insurance-no" class="form-check-input" type="radio" formControlName="hasHealthInsurance" [value]="false" />
+              <label class="form-check-label" for="insurance-no">Não</label>
+            </div>
+          </div>
+          @if (form.controls.health.controls.hasHealthInsurance.value) {
+            <div class="col-md-6">
+              <label class="form-label" for="healthInsuranceName">Qual convênio?</label>
+              <input id="healthInsuranceName" class="form-control" formControlName="healthInsuranceName" />
+            </div>
+          }
+        </div>
+
+        <div class="row g-4 mb-4">
+          <div class="col-md-4">
+            <span class="form-label d-block fw-bold">Calendário vacinal</span>
+            @for (option of vaccinationOptions; track option[0]) {
+              <div class="form-check">
+                <input [id]="'vaccination-' + option[0]" class="form-check-input" type="radio" formControlName="vaccination" [value]="option[0]" />
+                <label class="form-check-label" [for]="'vaccination-' + option[0]">{{ option[1] }}</label>
+              </div>
+            }
+          </div>
+          <div class="col-md-4">
+            <span class="form-label d-block fw-bold">O aluno(a) vive com</span>
+            @for (option of livesWithOptions; track option[0]) {
+              <div class="form-check">
+                <input [id]="'lives-' + option[0]" class="form-check-input" type="radio" formControlName="livesWith" [value]="option[0]" />
+                <label class="form-check-label" [for]="'lives-' + option[0]">{{ option[1] }}</label>
+              </div>
+            }
+            @if (form.controls.health.controls.livesWith.value === 'outros') {
+              <input class="form-control form-control-sm mt-2" formControlName="livesWithOther" placeholder="Com quem?" aria-label="Com quem o aluno vive" />
+            }
+          </div>
+          <div class="col-md-4">
+            <span class="form-label d-block fw-bold">O parto foi</span>
+            @for (option of birthTypeOptions; track option[0]) {
+              <div class="form-check">
+                <input [id]="'birth-' + option[0]" class="form-check-input" type="radio" formControlName="birthType" [value]="option[0]" />
+                <label class="form-check-label" [for]="'birth-' + option[0]">{{ option[1] }}</label>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="table-responsive" formGroupName="answers">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Dados sobre o(a) aluno(a)</th>
+                <th class="text-center text-nowrap">Sim</th>
+                <th class="text-center text-nowrap">Não</th>
+                <th class="w-50">Detalhes (se sim)</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (question of healthQuestions; track question.key) {
+                <tr [formGroupName]="question.key">
+                  <td>{{ question.label }}</td>
+                  <td class="text-center">
+                    <input class="form-check-input" type="radio" formControlName="answer" [value]="true" [attr.aria-label]="question.label + ' Sim'" />
+                  </td>
+                  <td class="text-center">
+                    <input class="form-check-input" type="radio" formControlName="answer" [value]="false" [attr.aria-label]="question.label + ' Não'" />
+                  </td>
+                  <td>
+                    @if (healthAnswer(question.key)) {
+                      <input class="form-control form-control-sm" formControlName="details" [attr.aria-label]="'Detalhes: ' + question.label" />
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Autorizações -->
   <div class="card border-0 shadow-sm rounded-4">
     <div class="card-body p-4">
-      <h2 class="h5 fw-bolder text-primary mb-3">Consentimento (LGPD)</h2>
+      <h2 class="h5 fw-bolder text-primary mb-3">Autorizações</h2>
+
+      @if (isBeneficiary()) {
+        <div class="mb-4">
+          <span class="form-label d-block">Uso de imagem e voz em materiais da ASSET *</span>
+          <div class="form-check form-check-inline">
+            <input id="image-yes" class="form-check-input" type="radio" formControlName="imageConsent" [value]="true" />
+            <label class="form-check-label" for="image-yes">Sim, autorizo</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input id="image-no" class="form-check-input" type="radio" formControlName="imageConsent" [value]="false" />
+            <label class="form-check-label" for="image-no">Não autorizo</label>
+          </div>
+          @if (showFormError('imageConsentRequired')) {
+            <div class="text-danger small">Informe se o uso de imagem foi autorizado ou não.</div>
+          }
+        </div>
+      }
+
       <div class="form-check">
         <input id="consentGiven" class="form-check-input" type="checkbox" formControlName="consentGiven"
                [class.is-invalid]="showError('consentGiven')" />
         <label class="form-check-label" for="consentGiven">
-          A pessoa (ou o tutor legal, no caso de menores) autorizou o uso destes dados pela ASSET.
+          Uso de dados conforme a LGPD: a pessoa (ou o responsável, no caso de menores) está de acordo com o uso destes dados pela ASSET. *
         </label>
         @if (showError('consentGiven')) {
           <div class="invalid-feedback">O consentimento é necessário para salvar o cadastro.</div>
@@ -158,8 +389,21 @@
     <div class="alert alert-danger mb-0">Há campos para corrigir. Veja as mensagens acima.</div>
   }
 
-  <div class="d-flex align-items-center gap-3">
+  <div class="d-flex flex-wrap align-items-center gap-3">
     <button type="submit" class="btn btn-primary btn-lg px-5 fw-bolder">Salvar</button>
+    @if (isBeneficiary()) {
+      <button type="button" class="btn btn-secondary btn-lg px-4 fw-bolder" (click)="print()">
+        <i class="bi bi-printer me-2"></i>Imprimir ficha de matrícula
+      </button>
+    }
     <a routerLink="/cadastro/pessoas" class="btn btn-outline-dark btn-lg px-4">Cancelar</a>
   </div>
 </form>
+</div>
+
+<!-- Ficha com os dados digitados: só aparece na impressão -->
+@if (isBeneficiary()) {
+  <div class="d-none d-print-block">
+    <app-enrollment-sheet [person]="draft()" [guardian]="draftGuardian()" />
+  </div>
+}

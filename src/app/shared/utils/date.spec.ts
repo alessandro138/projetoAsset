@@ -1,4 +1,4 @@
-import { ageOn, isMinor, parseIsoDate } from './date';
+import { ageOn, formatIsoDate, isMinor, parseIsoDate } from './date';
 
 describe('date utils', () => {
   const today = new Date(2026, 9, 24); // 24/10/2026
@@ -10,6 +10,11 @@ describe('date utils', () => {
     expect(date?.getDate()).toBe(5);
     expect(parseIsoDate('05/03/2010')).toBeNull();
     expect(parseIsoDate('')).toBeNull();
+  });
+
+  it('formats ISO dates in the Brazilian format', () => {
+    expect(formatIsoDate('2010-03-05')).toBe('05/03/2010');
+    expect(formatIsoDate('')).toBe('');
   });
 
   it('computes age considering whether the birthday has passed', () => {

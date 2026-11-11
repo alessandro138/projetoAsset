@@ -1,0 +1,138 @@
+@let p = person();
+@let s = student();
+@let r = responsible();
+@let h = health();
+
+<ng-template #sheetHeader>
+  <header class="sheet-header">
+    <img [src]="org.logoUrl" alt="Logo da ASSET" />
+    <div class="org">
+      <div class="org-short">{{ org.shortName }}</div>
+      <div class="org-line">{{ org.name }}</div>
+      <div class="org-line">{{ org.unit }}</div>
+      <div class="org-cnpj">CNPJ: {{ org.cnpj }}</div>
+    </div>
+  </header>
+  <div class="sheet-rule sheet-rule-blue"></div>
+  <div class="sheet-rule sheet-rule-pink"></div>
+</ng-template>
+
+<!-- Página 1: ficha de matrícula -->
+<article class="sheet-page">
+  <ng-container [ngTemplateOutlet]="sheetHeader" />
+
+  <div class="title-row">
+    <h1 class="sheet-title">FICHA DE MATRÍCULA</h1>
+    <div class="photo-box">
+      @if (p.photo) {
+        <img [src]="p.photo" alt="Foto do aluno" />
+      } @else {
+        <span>Foto 3x4</span>
+      }
+    </div>
+  </div>
+
+  <table class="sheet-table">
+    <tr><th>Início:</th><td>{{ formatDate(p.enrollment?.startDate) }}</td></tr>
+    <tr><th>Término:</th><td>{{ formatDate(p.enrollment?.endDate) }}</td></tr>
+    <tr><th>Modalidade:</th><td>{{ p.enrollment?.modality }}</td></tr>
+  </table>
+
+  <table class="sheet-table">
+    <tr><th>Data de Nascimento:</th><td>{{ s.birthDate }}</td></tr>
+    <tr><th>Nome completo:</th><td>{{ p.fullName }}</td></tr>
+    <tr><th>CPF:</th><td>{{ s.cpf }}</td></tr>
+    <tr><th>Naturalidade:</th><td>{{ p.nationality }}</td></tr>
+    <tr><th>Estado/Cidade que nasceu:</th><td>{{ s.birthPlace }}</td></tr>
+    <tr><th>N° Cartão do SUS:</th><td>{{ s.susCard }}</td></tr>
+    <tr><th>Endereço/CEP:</th><td>{{ s.address }}</td></tr>
+    <tr><th>Cel. WhatsAPP:</th><td>{{ s.phone }}</td></tr>
+  </table>
+
+  <h2 class="sheet-subtitle">Dados dos Responsáveis (para menor de idade)</h2>
+  <table class="sheet-table">
+    <tr><th>Responsável:</th><td>{{ r?.name }}</td></tr>
+    <tr><th>CPF:</th><td>{{ r?.cpf }}</td></tr>
+    <tr><th>Grau de parentesco:</th><td>{{ r?.relationship }}</td></tr>
+    <tr><th>Endereço:</th><td>{{ r?.address }}</td></tr>
+    <tr><th>Telefone e/ou WhatsAPP:</th><td>{{ r?.phone }}</td></tr>
+  </table>
+
+  <footer class="page-number">1</footer>
+</article>
+
+<!-- Página 2: ficha de saúde -->
+<article class="sheet-page">
+  <ng-container [ngTemplateOutlet]="sheetHeader" />
+
+  <h1 class="sheet-title text-center mb-1">FICHA DE SAÚDE</h1>
+  <div class="text-center fw-bold mb-3">IDENTIFICAÇÃO DO (A) ALUNO (A)</div>
+
+  <table class="sheet-table">
+    <tr><th>Aluno(a):</th><td>{{ p.fullName }}</td></tr>
+    <tr><th>Matrícula UBS:</th><td>{{ h.ubsRegistration }}</td></tr>
+    <tr><th>Unidade de saúde mais próxima:</th><td>{{ h.nearestHealthUnit }}</td></tr>
+    <tr><th>Possui convênio médico?</th><td>{{ insurance() }}</td></tr>
+  </table>
+
+  <h2 class="sheet-section">DADOS DO CALENDÁRIO VACINAL</h2>
+  <div class="options-block">
+    @for (option of vaccinationOptions; track option[0]) {
+      <div>{{ option[1] }} ( {{ mark(h.vaccination === option[0]) }} )</div>
+    }
+  </div>
+
+  <h2 class="sheet-section text-center">DADOS SOBRE O (A) ALUNO (A)</h2>
+  <table class="sheet-table sheet-table-health">
+    <tr>
+      <td colspan="2">
+        <strong>O aluno(a) vive com:</strong><br />
+        @for (option of livesWithOptions; track option[0]; let last = $last) {
+          ( {{ mark(h.livesWith === option[0]) }} ) {{ option[1] }}{{ last ? '' : ';' }}
+        }
+        @if (h.livesWith === 'outros' && h.livesWithOther) {
+          – {{ h.livesWithOther }}
+        }
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <strong>O parto foi:</strong><br />
+        @for (option of birthTypeOptions; track option[0]; let last = $last) {
+          ( {{ mark(h.birthType === option[0]) }} ) {{ option[1] }}{{ last ? '' : ';' }}
+        }
+      </td>
+    </tr>
+    @for (question of healthQuestions(); track question.label) {
+      <tr><th>{{ question.label }}</th><td>{{ question.answer }}</td></tr>
+    }
+  </table>
+
+  <footer class="page-number">2</footer>
+</article>
+
+<!-- Página 3: autorizações -->
+<article class="sheet-page sheet-page-serif">
+  <ng-container [ngTemplateOutlet]="sheetHeader" />
+
+  <h1 class="sheet-title text-center">Autorização para uso de imagens</h1>
+  @for (paragraph of imageAuthorizationText; track $index) {
+    <p class="sheet-paragraph">{{ paragraph }}</p>
+  }
+  <div class="fw-bold">( {{ mark(p.imageConsent === true) }} ) <u>Sim, autorizo</u></div>
+  <div class="fw-bold mb-4">( {{ mark(p.imageConsent === false) }} ) não autorizo</div>
+
+  <h2 class="sheet-subtitle-left">Autorização para uso de dados, conforme LGPD</h2>
+  <p class="sheet-paragraph-plain">{{ lgpdAuthorizationText }}</p>
+  <div class="fw-bold">( {{ mark(p.consentGiven) }} ) <u>Sim, estou de acordo</u></div>
+
+  <div class="signature">
+    <div class="signature-line"></div>
+    <div class="fw-bold">Assinatura do Responsável</div>
+    @if (r) {
+      <div class="small">{{ r.name }} – CPF {{ r.cpf }}</div>
+    }
+  </div>
+
+  <footer class="page-number">3</footer>
+</article>
