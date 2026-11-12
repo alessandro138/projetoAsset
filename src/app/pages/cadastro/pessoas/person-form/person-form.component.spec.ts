@@ -151,4 +151,35 @@ describe('PersonFormComponent', () => {
     expect(component.draftGuardian()?.fullName).toBe('João Tutor');
     expect(service.all().length).toBe(1);
   });
+
+  it('offers the commitment term for Jiu-jítsu and prints only the chosen document', async () => {
+    const fixture = TestBed.createComponent(PersonFormComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance;
+    const element = fixture.nativeElement as HTMLElement;
+    const buttonLabels = () => Array.from(element.querySelectorAll('button')).map(b => b.textContent!.trim());
+    const printBlocks = () =>
+      Array.from(element.querySelectorAll('app-enrollment-sheet, app-commitment-term')).map(e =>
+        e.parentElement!.classList.contains('d-print-block'),
+      );
+
+    fillValid(component, `${thisYear - 30}-05-10`);
+    fixture.detectChanges();
+    expect(component.term()?.key).toBe('jiu-jitsu');
+    expect(buttonLabels()).toContain('Imprimir termo');
+    expect(element.querySelector('app-commitment-term')?.textContent).toContain('Eu, Maria da Silva,');
+
+    const print = spyOn(window, 'print');
+    component.print('term');
+    expect(print).toHaveBeenCalled();
+    expect(printBlocks()).toEqual([false, true]);
+    component.print('sheet');
+    expect(printBlocks()).toEqual([true, false]);
+
+    component.form.patchValue({ enrollment: { modalityId: 'm-ballet' } });
+    fixture.detectChanges();
+    expect(component.term()).toBeNull();
+    expect(buttonLabels()).not.toContain('Imprimir termo');
+  });
 });

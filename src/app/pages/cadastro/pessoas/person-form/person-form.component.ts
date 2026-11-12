@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -19,8 +19,10 @@ import {
   VaccinationStatus,
   emptyHealthRecord,
 } from '../../../../models/person.model';
+import { commitmentTermFor } from '../../../../models/commitment-terms';
 import { ModalityService } from '../../../../services/modality.service';
 import { PersonService } from '../../../../services/person.service';
+import { CommitmentTermComponent } from '../../../../shared/components/commitment-term/commitment-term.component';
 import {
   EnrollmentSheetComponent,
   PersonDraft,
@@ -42,11 +44,14 @@ const STATES = [
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-type HealthAnswerGroup = FormGroup<{ answer: FormControl<boolean | null>; details: FormControl<string> }>;
+/** O que vai para a impressora: a ficha de matrícula ou o termo de compromisso */
+type PrintTarget = 'sheet' | 'term';
+
+type HealthAnswerGroup =FormGroup<{ answer: FormControl<boolean | null>; details: FormControl<string> }>;
 
 @Component({
   selector: 'app-person-form',
-  imports: [ReactiveFormsModule, RouterLink, MaskDirective, EnrollmentSheetComponent],
+  imports: [ReactiveFormsModule, RouterLink, MaskDirective, EnrollmentSheetComponent, CommitmentTermComponent],
   templateUrl: './person-form.component.html',
   styles: `
     .photo-preview { width: 120px; height: 160px; background: var(--bs-light); }
@@ -61,6 +66,7 @@ export class PersonFormComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly personService = inject(PersonService);
   private readonly modalityService = inject(ModalityService);
+  private readonly changeDetector = inject(ChangeDetectorRef);
 
   readonly states = STATES;
   readonly typeOptions = Object.entries(PERSON_TYPE_LABELS) as [PersonType, string][];
@@ -163,6 +169,10 @@ export class PersonFormComponent implements OnInit {
     return draft;
   });
 
+  /** Termo de compromisso da modalidade escolhida (Jiu-jítsu ou Kickboxing) */
+  readonly term = computed(() => commitmentTermFor(this.draft().enrollment?.modality));
+  readonly printTarget = signal<PrintTarget>('sheet');
+
   readonly draftGuardian = computed(() => {
     const guardianId = this.formValue().guardianId;
     return guardianId ? (this.personService.getById(guardianId) ?? null) : null;
@@ -225,7 +235,11 @@ export class PersonFormComponent implements OnInit {
     this.form.controls.photo.setValue('');
   }
 
-  print(): void {
+  /** Imprime a ficha ou o termo de compromisso com o que está digitado */
+  print(target: PrintTarget = 'sheet'): void {
+    this.printTarget.set(target);
+    // Aplica o d-print-block antes de abrir a impressão
+    this.changeDetector.detectChanges();
     window.print();
   }
 

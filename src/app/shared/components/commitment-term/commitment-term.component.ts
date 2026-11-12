@@ -28,7 +28,7 @@ import { ORGANIZATION } from '../../../models/organization';
       }
 
       <p class="sheet-paragraph-plain term-text">
-        Eu, <strong class="student-name">{{ studentName() }}</strong>, {{ term().opening }}
+        Eu, <strong class="student-name">{{ studentName().trim() || blankName }}</strong>, {{ term().opening }}
       </p>
       @for (paragraph of term().paragraphs; track $index) {
         <p class="sheet-paragraph-plain term-text">{{ paragraph }}</p>
@@ -61,5 +61,7 @@ export class CommitmentTermComponent {
   readonly date = input<Date>(new Date());
 
   readonly org = ORGANIZATION;
+  /** Sem nome digitado, mantém o espaço para preencher à mão */
+  readonly blankName = '_'.repeat(50);
   readonly dateText = computed(() => longDatePtBr(this.date()));
 }

@@ -408,18 +408,29 @@
       }
     </button>
     @if (isBeneficiary()) {
-      <button type="button" class="btn btn-secondary btn-lg px-4 fw-bolder" (click)="print()">
+      <button type="button" class="btn btn-secondary btn-lg px-4 fw-bolder" (click)="print('sheet')">
         <i class="bi bi-printer me-2"></i>Imprimir ficha de matrícula
       </button>
+      @if (term(); as t) {
+        <button type="button" class="btn btn-outline-secondary btn-lg px-4 fw-bolder" (click)="print('term')"
+                [title]="'Termo de compromisso de ' + t.modality">
+          <i class="bi bi-file-earmark-text me-2"></i>Imprimir termo
+        </button>
+      }
     }
     <a routerLink="/cadastro/pessoas" class="btn btn-outline-dark btn-lg px-4">Cancelar</a>
   </div>
 </form>
 </div>
 
-<!-- Ficha com os dados digitados: só aparece na impressão -->
+<!-- Ficha e termo com os dados digitados: só aparecem na impressão (um de cada vez) -->
 @if (isBeneficiary()) {
-  <div class="d-none d-print-block">
+  <div class="d-none" [class.d-print-block]="printTarget() === 'sheet'">
     <app-enrollment-sheet [person]="draft()" [guardian]="draftGuardian()" />
   </div>
+  @if (term(); as t) {
+    <div class="d-none" [class.d-print-block]="printTarget() === 'term'">
+      <app-commitment-term [term]="t" [studentName]="draft().fullName" />
+    </div>
+  }
 }
