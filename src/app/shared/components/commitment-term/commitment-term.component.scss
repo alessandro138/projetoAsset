@@ -1,0 +1,59 @@
+// Complementa os estilos da folha A4 (enrollment-sheet.component.scss)
+.term-page {
+  padding-top: 12mm;
+}
+
+.term-title {
+  margin: 8mm 0 4mm;
+  color: #c00000;
+  font: bold 12pt 'Times New Roman', Times, serif;
+  text-align: center;
+}
+
+// Corpo do termo em Times, como no papel (o cabeçalho segue o da ficha)
+.term-text,
+.term-signature p {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 12pt;
+}
+
+.term-text {
+  margin: 0 0 3mm;
+  line-height: 2;
+}
+
+.term-page > .term-text:first-of-type {
+  margin-top: 10mm;
+}
+
+.student-name {
+  text-transform: uppercase;
+}
+
+.term-date {
+  margin-top: 8mm;
+}
+
+.term-signature {
+  width: 60%;
+  margin-top: 8mm;
+
+  p {
+    margin-bottom: 14mm;
+  }
+}
+
+.term-footer {
+  position: absolute;
+  bottom: 12mm;
+  left: 20mm;
+  color: #555;
+  font: 8pt Arial, Helvetica, sans-serif;
+  line-height: 1.6;
+
+  @media print {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+  }
+}

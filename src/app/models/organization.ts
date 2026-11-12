@@ -8,6 +8,11 @@ export const ORGANIZATION = {
   unit: 'MATRIZ – Nossa Casa ASSET',
   cnpj: '58.106.972/0001-45',
   logoUrl: 'logo-asset.png',
+  /** Rodapé dos termos de compromisso (igual ao papel) */
+  termFooter: [
+    'Rua Emilio Castro, 423 — Jardim Damasceno — São Paulo/SP — CEP: 02879-080',
+    'asset.educarparatransformar@gmail.com • (11) 3924-6076 • @asset.educar',
+  ],
 };
 
 export const IMAGE_AUTHORIZATION_TEXT = [
