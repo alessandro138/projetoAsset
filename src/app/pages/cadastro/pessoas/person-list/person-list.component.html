@@ -10,20 +10,44 @@
   </div>
 }
 
-@if (deactivatedCount() > 0) {
-  <div class="form-check form-switch mb-3">
+<div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+  <div class="input-group" style="max-width: 26rem">
+    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
     <input
-      class="form-check-input"
-      type="checkbox"
-      role="switch"
-      id="showDeactivated"
-      [checked]="showDeactivated()"
-      (change)="showDeactivated.set($any($event.target).checked)"
+      type="search"
+      class="form-control"
+      placeholder="Buscar por nome, tutor, tipo ou documento"
+      aria-label="Buscar pessoa por nome, tutor legal, tipo ou número do documento"
+      [value]="search()"
+      (input)="onSearch($event)"
     />
-    <label class="form-check-label" for="showDeactivated">
-      Mostrar cadastros desativados ({{ deactivatedCount() }})
-    </label>
   </div>
+  @if (deactivatedCount() > 0) {
+    <div class="form-check form-switch mb-0">
+      <input
+        class="form-check-input"
+        type="checkbox"
+        role="switch"
+        id="showDeactivated"
+        [checked]="showDeactivated()"
+        (change)="showDeactivated.set($any($event.target).checked)"
+      />
+      <label class="form-check-label" for="showDeactivated">
+        Mostrar cadastros desativados ({{ deactivatedCount() }})
+      </label>
+    </div>
+  }
+</div>
+
+@if (search().trim() && !loadError()) {
+  <p class="small text-muted mb-3" aria-live="polite">
+    {{ rows().length }} de {{ totalShown() }} {{ totalShown() === 1 ? 'cadastro' : 'cadastros' }}
+    @if (hiddenMatches()) {
+      · {{ hiddenMatches() }} {{ hiddenMatches() === 1 ? 'cadastro desativado também corresponde' : 'cadastros desativados também correspondem' }}
+      à busca
+      <button type="button" class="btn btn-link btn-sm p-0 align-baseline" (click)="showDeactivated.set(true)">mostrar</button>
+    }
+  </p>
 }
 
 @if (loadError()) {
@@ -36,7 +60,13 @@
 } @else if (rows().length === 0) {
   <div class="card border-0 shadow-sm rounded-4">
     <div class="card-body p-4 text-center text-muted">
-      {{ deactivatedCount() > 0 ? 'Nenhum cadastro ativo.' : 'Nenhuma pessoa cadastrada ainda.' }}
+      @if (search().trim()) {
+        Nenhum cadastro encontrado para "{{ search().trim() }}".
+      } @else if (deactivatedCount() > 0) {
+        Nenhum cadastro ativo.
+      } @else {
+        Nenhuma pessoa cadastrada ainda.
+      }
     </div>
   </div>
 } @else {
@@ -79,12 +109,21 @@
                   </a>
                 }
                 <a [routerLink]="row.id" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil me-1"></i>Editar</a>
-                @if (!row.deactivatedAt) {
+                @if (row.deactivatedAt) {
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-success ms-1"
+                    title="Reativar cadastro"
+                    (click)="ask(row, 'reactivate')"
+                  >
+                    <i class="bi bi-person-check me-1"></i>Reativar
+                  </button>
+                } @else {
                   <button
                     type="button"
                     class="btn btn-sm btn-outline-danger ms-1"
                     title="Desativar cadastro"
-                    (click)="askDeactivate(row)"
+                    (click)="ask(row, 'deactivate')"
                   >
                     <i class="bi bi-person-x me-1"></i>Desativar
                   </button>
@@ -98,52 +137,72 @@
   </div>
 }
 
-<!-- Janela de confirmação da desativação (sem o JS do Bootstrap) -->
-@if (confirming(); as row) {
+<!-- Janela de confirmação da desativação/reativação (sem o JS do Bootstrap) -->
+@if (confirming(); as pending) {
   <div
     class="modal d-block"
     tabindex="-1"
     role="dialog"
     aria-modal="true"
-    aria-labelledby="deactivateTitle"
-    (click)="cancelDeactivate()"
+    aria-labelledby="statusTitle"
+    (click)="cancel()"
   >
     <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
       <div class="modal-content border-0 rounded-4 shadow">
         <div class="modal-header">
-          <h2 class="modal-title fs-5 fw-bolder" id="deactivateTitle">
-            <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Desativar cadastro
+          <h2 class="modal-title fs-5 fw-bolder" id="statusTitle">
+            @if (pending.action === 'deactivate') {
+              <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Desativar cadastro
+            } @else {
+              <i class="bi bi-person-check-fill text-success me-2"></i>Reativar cadastro
+            }
           </h2>
-          <button type="button" class="btn-close" aria-label="Cancelar" [disabled]="deactivating()" (click)="cancelDeactivate()"></button>
+          <button type="button" class="btn-close" aria-label="Cancelar" [disabled]="saving()" (click)="cancel()"></button>
         </div>
         <div class="modal-body">
-          <p>Deseja desativar o cadastro de <strong>{{ row.fullName }}</strong>?</p>
-          <p class="text-muted small mb-0">
-            Os dados não são apagados: o cadastro deixa de aparecer na lista (use "Mostrar cadastros desativados" para
-            vê-lo). Ficam registrados a data da desativação e quem desativou.
-          </p>
-          @if (row.activeWards.length) {
-            <div class="alert alert-warning small mt-3 mb-0">
-              <i class="bi bi-info-circle-fill me-1"></i>
-              Esta pessoa é tutor legal de: <strong>{{ row.activeWards.join(', ') }}</strong>.
-              Esses beneficiários continuam ativos e vinculados a ela.
-            </div>
+          @if (pending.action === 'deactivate') {
+            <p>Deseja desativar o cadastro de <strong>{{ pending.row.fullName }}</strong>?</p>
+            <p class="text-muted small mb-0">
+              Os dados não são apagados: o cadastro deixa de aparecer na lista (use "Mostrar cadastros desativados"
+              para vê-lo). Ficam registrados a data da desativação e quem desativou.
+            </p>
+            @if (pending.row.activeWards.length) {
+              <div class="alert alert-warning small mt-3 mb-0">
+                <i class="bi bi-info-circle-fill me-1"></i>
+                Esta pessoa é tutor legal de: <strong>{{ pending.row.activeWards.join(', ') }}</strong>.
+                Esses beneficiários continuam ativos e vinculados a ela.
+              </div>
+            }
+          } @else {
+            <p>Deseja reativar o cadastro de <strong>{{ pending.row.fullName }}</strong>?</p>
+            <p class="text-muted small mb-0">
+              O cadastro, desativado em {{ pending.row.deactivatedAt }}, volta a aparecer na lista e pode ser escolhido
+              como tutor legal.
+            </p>
           }
-          @if (deactivateError()) {
-            <div class="alert alert-danger small mt-3 mb-0">{{ deactivateError() }}</div>
+          @if (actionError()) {
+            <div class="alert alert-danger small mt-3 mb-0">{{ actionError() }}</div>
           }
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" [disabled]="deactivating()" (click)="cancelDeactivate()">
-            Cancelar
-          </button>
-          <button type="button" class="btn btn-danger fw-bolder" [disabled]="deactivating()" (click)="confirmDeactivate()">
-            @if (deactivating()) {
-              <span class="spinner-border spinner-border-sm me-2"></span>Desativando...
-            } @else {
-              <i class="bi bi-person-x me-1"></i>Sim, desativar
-            }
-          </button>
+          <button type="button" class="btn btn-outline-secondary" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+          @if (pending.action === 'deactivate') {
+            <button type="button" class="btn btn-danger fw-bolder" [disabled]="saving()" (click)="confirm()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Desativando...
+              } @else {
+                <i class="bi bi-person-x me-1"></i>Sim, desativar
+              }
+            </button>
+          } @else {
+            <button type="button" class="btn btn-success fw-bolder" [disabled]="saving()" (click)="confirm()">
+              @if (saving()) {
+                <span class="spinner-border spinner-border-sm me-2"></span>Reativando...
+              } @else {
+                <i class="bi bi-person-check me-1"></i>Sim, reativar
+              }
+            </button>
+          }
         </div>
       </div>
     </div>

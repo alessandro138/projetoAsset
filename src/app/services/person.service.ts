@@ -127,6 +127,15 @@ export class PersonService {
     this.people.update(list => list.map(p => (p.id === id ? { ...p, deactivatedAt: row.desativado_em } : p)));
   }
 
+  /** Reativa um cadastro desativado. Em caso de erro, lança Error com mensagem em português */
+  async reactivate(id: string): Promise<void> {
+    const { error } = await this.supabase.from('pessoas').update({ desativado_em: null }).eq('id', id);
+    if (error) {
+      throw new Error(friendlyDatabaseError(error));
+    }
+    this.people.update(list => list.map(p => (p.id === id ? { ...p, deactivatedAt: null } : p)));
+  }
+
   private async fetchAll(): Promise<void> {
     this.loading.set(true);
     this.loadError.set('');

@@ -46,4 +46,8 @@ export class InMemoryPersonService {
   async deactivate(id: string): Promise<void> {
     this.people.update(list => list.map(p => (p.id === id ? { ...p, deactivatedAt: new Date().toISOString() } : p)));
   }
+
+  async reactivate(id: string): Promise<void> {
+    this.people.update(list => list.map(p => (p.id === id ? { ...p, deactivatedAt: null } : p)));
+  }
 }

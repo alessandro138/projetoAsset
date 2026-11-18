@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 
 import { Unit } from '../../models/site-content.model';
 import { SiteContentService } from '../../services/site-content.service';
+import { normalizeForSearch as normalize } from '../../shared/utils/text';
 
 /** Unidades da ASSET em cards compactos (conteúdo editável em SiteContentService) */
 @Component({
@@ -31,9 +32,4 @@ export class UnidadesComponent {
   onSearch(event: Event): void {
     this.search.set((event.target as HTMLInputElement).value);
   }
-}
-
-/** Busca sem diferenciar maiúsculas e acentos */
-function normalize(value: string): string {
-  return value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }

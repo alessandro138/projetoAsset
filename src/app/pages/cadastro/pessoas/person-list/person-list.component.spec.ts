@@ -87,6 +87,69 @@ describe('PersonListComponent', () => {
     expect(element.textContent).toContain('Desativado em');
   });
 
+  it('reactivates a deactivated registration after confirmation', async () => {
+    const { fixture, people, ana, element } = await open();
+    await people.deactivate(ana.id);
+    fixture.detectChanges();
+    element.querySelector<HTMLInputElement>('#showDeactivated')!.click();
+    fixture.detectChanges();
+
+    const anaRow = element.querySelector('tbody tr')!;
+    expect(anaRow.textContent).toContain('Desativado em');
+    clickButton(element, 'Reativar', anaRow);
+    fixture.detectChanges();
+    const dialog = element.querySelector('[role="dialog"]')!;
+    expect(dialog.textContent).toContain('Reativar cadastro');
+    clickButton(element, 'Sim, reativar', dialog);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(people.getById(ana.id)!.deactivatedAt).toBeNull();
+    expect(element.textContent).toContain('O cadastro de Ana Souza foi reativado.');
+    expect(element.querySelector('#showDeactivated')).toBeNull();
+    expect(names(element)).toEqual(['Ana Souza', 'Bruno Lima']);
+  });
+
+  it('filters the loaded list by name (ignoring accents and case) and by document number', async () => {
+    const { fixture, element } = await open();
+    const input = element.querySelector<HTMLInputElement>('input[type="search"]')!;
+    const type = (value: string) => {
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    };
+
+    type('BRÚNO');
+    expect(names(element)).toEqual(['Bruno Lima']);
+    expect(element.textContent).toContain('1 de 2 cadastros');
+
+    type('529.982');
+    expect(names(element)).toEqual(['Ana Souza']);
+
+    type('zzz');
+    expect(names(element)).toEqual([]);
+    expect(element.textContent).toContain('Nenhum cadastro encontrado para "zzz"');
+
+    type('');
+    expect(names(element)).toEqual(['Ana Souza', 'Bruno Lima']);
+  });
+
+  it('warns when the search matches hidden deactivated registrations', async () => {
+    const { fixture, people, ana, element } = await open();
+    await people.deactivate(ana.id);
+    fixture.detectChanges();
+    const input = element.querySelector<HTMLInputElement>('input[type="search"]')!;
+    input.value = 'ana';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(names(element)).toEqual([]);
+    expect(element.textContent).toContain('1 cadastro desativado também corresponde');
+    clickButton(element, 'mostrar');
+    fixture.detectChanges();
+    expect(names(element)).toEqual(['Ana Souza']);
+  });
+
   it('keeps the registration when the confirmation is cancelled', async () => {
     const { fixture, people, ana, element } = await open();
     clickButton(element, 'Desativar', element.querySelector('tbody tr')!);
