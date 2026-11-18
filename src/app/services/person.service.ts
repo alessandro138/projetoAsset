@@ -110,6 +110,23 @@ export class PersonService {
     return this.getById(row.id)!;
   }
 
+  /**
+   * Desativa o cadastro. O banco grava a hora do servidor e quem desativou (o valor enviado
+   * só sinaliza a desativação). Em caso de erro, lança Error com mensagem em português
+   */
+  async deactivate(id: string): Promise<void> {
+    const { data: row, error } = await this.supabase
+      .from('pessoas')
+      .update({ desativado_em: new Date().toISOString() })
+      .eq('id', id)
+      .select('desativado_em')
+      .single<Pick<PessoaRow, 'desativado_em'>>();
+    if (error || !row) {
+      throw new Error(friendlyDatabaseError(error));
+    }
+    this.people.update(list => list.map(p => (p.id === id ? { ...p, deactivatedAt: row.desativado_em } : p)));
+  }
+
   private async fetchAll(): Promise<void> {
     this.loading.set(true);
     this.loadError.set('');

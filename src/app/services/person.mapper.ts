@@ -17,7 +17,8 @@ import {
 export interface PessoaRow {
   id: string;
   nome_completo: string;
-  cpf: string;
+  cpf: string | null;
+  rg: string | null;
   data_nascimento: string;
   naturalidade: string | null;
   cidade_nascimento: string | null;
@@ -39,6 +40,9 @@ export interface PessoaRow {
   grau_parentesco: string | null;
   autoriza_imagem: boolean | null;
   consentimento_lgpd: boolean;
+  /** Controle (gravado pelo banco): data/hora do cadastro e da desativação */
+  criado_em: string;
+  desativado_em: string | null;
 }
 
 export interface MatriculaRow {
@@ -65,7 +69,7 @@ export interface FichaSaudeRow {
 }
 
 /** Colunas editáveis de pessoas (sem id, foto e campos de controle) */
-export type PessoaInput = Omit<PessoaRow, 'id' | 'foto_caminho'>;
+export type PessoaInput = Omit<PessoaRow, 'id' | 'foto_caminho' | 'criado_em' | 'desativado_em'>;
 export type MatriculaInput = Omit<MatriculaRow, 'id' | 'pessoa_id' | 'modalidades_servicos'>;
 export type FichaSaudeInput = Omit<FichaSaudeRow, 'pessoa_id'>;
 
@@ -77,7 +81,8 @@ function nullIfEmpty(value: string | null | undefined): string | null {
 export function toPessoaInput(person: Omit<Person, 'id'>): PessoaInput {
   return {
     nome_completo: person.fullName.trim(),
-    cpf: person.cpf,
+    cpf: nullIfEmpty(person.cpf),
+    rg: nullIfEmpty(person.rg),
     data_nascimento: person.birthDate,
     naturalidade: nullIfEmpty(person.nationality),
     cidade_nascimento: nullIfEmpty(person.birthCity),
@@ -142,7 +147,8 @@ export function fromRows(
   return {
     id: row.id,
     fullName: row.nome_completo,
-    cpf: row.cpf,
+    cpf: row.cpf ?? '',
+    rg: row.rg ?? '',
     birthDate: row.data_nascimento,
     nationality: row.naturalidade ?? '',
     birthCity: row.cidade_nascimento ?? '',
@@ -186,5 +192,7 @@ export function fromRows(
       : null,
     imageConsent: row.autoriza_imagem,
     consentGiven: row.consentimento_lgpd,
+    createdAt: row.criado_em,
+    deactivatedAt: row.desativado_em,
   };
 }

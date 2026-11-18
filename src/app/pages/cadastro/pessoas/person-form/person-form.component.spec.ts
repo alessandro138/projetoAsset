@@ -34,6 +34,7 @@ describe('PersonFormComponent', () => {
     return service.save({
       fullName: 'João Tutor',
       cpf: '11144477735',
+      rg: '',
       birthDate: `${thisYear - 40}-01-01`,
       nationality: 'Brasileira',
       birthCity: '',
@@ -122,6 +123,30 @@ describe('PersonFormComponent', () => {
     expect(component.modalityOptions().map(m => m.name)).toEqual(['Jiu-jítsu', 'Ballet']);
     component.form.patchValue({ enrollment: { modalityId: 'm-antiga' } });
     expect(component.modalityOptions().map(m => m.name)).toEqual(['Jiu-jítsu', 'Ballet', 'Berçário']);
+  });
+
+  it('saves with only the RG, without CPF', async () => {
+    const component = create();
+    fillValid(component, `${thisYear - 30}-05-10`);
+    component.form.patchValue({ cpf: '', rg: '12345678X' });
+    await component.save();
+    expect(service.all().length).toBe(1);
+    expect(service.all()[0].cpf).toBe('');
+    expect(service.all()[0].rg).toBe('12345678X');
+  });
+
+  it('requires CPF or RG and rejects an incomplete RG', async () => {
+    const component = create();
+    fillValid(component, `${thisYear - 30}-05-10`);
+    component.form.patchValue({ cpf: '', rg: '' });
+    await component.save();
+    expect(component.form.hasError('documentRequired')).toBeTrue();
+    expect(component.showFormError('documentRequired')).toBeTrue();
+
+    component.form.patchValue({ rg: '123' });
+    await component.save();
+    expect(component.form.controls.rg.hasError('rg')).toBeTrue();
+    expect(service.all().length).toBe(0);
   });
 
   it('rejects a duplicated CPF', async () => {

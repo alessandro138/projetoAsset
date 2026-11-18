@@ -1,4 +1,17 @@
-import { ageOn, formatIsoDate, isMinor, parseIsoDate } from './date';
+import { ageOn, formatIsoDate, formatTimestampDate, isMinor, parseIsoDate } from './date';
+
+describe('formatTimestampDate', () => {
+  it('formats a database timestamp as DD/MM/AAAA in local time', () => {
+    const local = new Date(2026, 10, 18, 12, 0);
+    expect(formatTimestampDate(local.toISOString())).toBe('18/11/2026');
+  });
+
+  it('returns empty for missing or invalid values', () => {
+    expect(formatTimestampDate(null)).toBe('');
+    expect(formatTimestampDate(undefined)).toBe('');
+    expect(formatTimestampDate('abc')).toBe('');
+  });
+});
 
 describe('date utils', () => {
   const today = new Date(2026, 9, 24); // 24/10/2026

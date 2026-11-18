@@ -20,6 +20,16 @@ export function formatIsoDate(value: string | null | undefined): string {
   return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
 }
 
+/** Data/hora ISO do banco (ex.: '2026-11-18T13:45:00+00:00') → 'DD/MM/AAAA' no fuso local; vazio se inválida */
+export function formatTimestampDate(value: string | null | undefined): string {
+  const date = value ? new Date(value) : null;
+  if (!date || isNaN(date.getTime())) {
+    return '';
+  }
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+}
+
 export function ageOn(birthDate: string, today: Date = new Date()): number | null {
   const birth = parseIsoDate(birthDate);
   if (!birth) {

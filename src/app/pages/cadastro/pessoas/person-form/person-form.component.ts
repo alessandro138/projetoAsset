@@ -31,7 +31,9 @@ import { MaskDirective } from '../../../../shared/directives/mask.directive';
 import { isMinor } from '../../../../shared/utils/date';
 import { formatMask, onlyDigits } from '../../../../shared/utils/mask';
 import { beneficiaryValidator } from '../../../../shared/validators/beneficiary.validator';
+import { normalizeRg, RG_MAX_LENGTH } from '../../../../shared/utils/rg';
 import { cpfUniqueValidator, cpfValidator } from '../../../../shared/validators/cpf.validator';
+import { documentRequiredValidator, rgValidator } from '../../../../shared/validators/document.validator';
 import { atLeastOneCheckedValidator, pastDateValidator } from '../../../../shared/validators/form.validators';
 import { guardianValidator } from '../../../../shared/validators/guardian.validator';
 
@@ -69,6 +71,7 @@ export class PersonFormComponent implements OnInit {
   private readonly changeDetector = inject(ChangeDetectorRef);
 
   readonly states = STATES;
+  readonly rgMaxLength = RG_MAX_LENGTH;
   readonly typeOptions = Object.entries(PERSON_TYPE_LABELS) as [PersonType, string][];
   readonly relationships = GUARDIAN_RELATIONSHIPS;
   readonly vaccinationOptions = Object.entries(VACCINATION_LABELS) as [VaccinationStatus, string][];
@@ -87,9 +90,10 @@ export class PersonFormComponent implements OnInit {
     {
       fullName: ['', [Validators.required, Validators.maxLength(150)]],
       cpf: this.fb.nonNullable.control('', {
-        validators: [Validators.required, cpfValidator()],
+        validators: [cpfValidator()],
         asyncValidators: [cpfUniqueValidator(cpf => this.personService.isCpfTaken(cpf, this.id()))],
       }),
+      rg: ['', rgValidator()],
       birthDate: ['', [Validators.required, pastDateValidator()]],
       nationality: ['Brasileira'],
       birthCity: [''],
@@ -138,6 +142,7 @@ export class PersonFormComponent implements OnInit {
           () => this.id() ?? null,
         ),
         beneficiaryValidator(),
+        documentRequiredValidator(),
       ],
     },
   );
@@ -154,11 +159,16 @@ export class PersonFormComponent implements OnInit {
     return this.modalityService.all().filter(m => m.active || m.id === selectedId);
   });
 
-  /** Só maiores de idade podem ser tutores; exclui a própria pessoa */
+  /** Só maiores de idade com cadastro ativo podem ser tutores (mantém o já escolhido); exclui a própria pessoa */
   readonly guardianOptions = computed(() =>
     this.personService
       .all()
-      .filter(p => p.id !== this.id() && !isMinor(p.birthDate))
+      .filter(
+        p =>
+          p.id !== this.id() &&
+          !isMinor(p.birthDate) &&
+          (!p.deactivatedAt || p.id === this.formValue().guardianId),
+      )
       .sort((a, b) => a.fullName.localeCompare(b.fullName, 'pt-BR')),
   );
 
@@ -280,6 +290,7 @@ export class PersonFormComponent implements OnInit {
       id: this.id(),
       fullName: v.fullName.trim(),
       cpf: onlyDigits(v.cpf),
+      rg: normalizeRg(v.rg),
       birthDate: v.birthDate,
       nationality: v.nationality.trim(),
       birthCity: v.birthCity.trim(),
@@ -314,6 +325,7 @@ export class PersonFormComponent implements OnInit {
     return {
       fullName: person.fullName,
       cpf: formatMask(person.cpf, 'cpf'),
+      rg: person.rg,
       birthDate: person.birthDate,
       nationality: person.nationality,
       birthCity: person.birthCity,

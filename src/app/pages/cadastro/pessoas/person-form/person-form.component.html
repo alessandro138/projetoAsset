@@ -112,16 +112,33 @@
             </div>
 
             <div class="col-md-4">
-              <label class="form-label" for="cpf">CPF *</label>
+              <label class="form-label" for="cpf">CPF</label>
               <input id="cpf" class="form-control" formControlName="cpf" appMask="cpf" inputmode="numeric"
-                     placeholder="000.000.000-00" [class.is-invalid]="showError('cpf')" />
-              @if (showError('cpf', 'required')) {
-                <div class="invalid-feedback">Informe o CPF.</div>
-              } @else if (showError('cpf', 'cpf')) {
+                     placeholder="000.000.000-00"
+                     [class.is-invalid]="showError('cpf') || showFormError('documentRequired')" />
+              @if (showError('cpf', 'cpf')) {
                 <div class="invalid-feedback">CPF inválido. Confira os números digitados.</div>
               } @else if (showError('cpf', 'cpfTaken')) {
                 <div class="invalid-feedback">Já existe uma pessoa cadastrada com este CPF.</div>
+              } @else if (showFormError('documentRequired')) {
+                <div class="invalid-feedback">Informe o CPF ou o RG.</div>
               }
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label" for="rg">RG</label>
+              <input id="rg" class="form-control" formControlName="rg" appMask="rg" [maxlength]="rgMaxLength"
+                     autocomplete="off" placeholder="Só números (até 12)"
+                     [class.is-invalid]="showError('rg') || showFormError('documentRequired')" />
+              @if (showError('rg', 'rg')) {
+                <div class="invalid-feedback">RG incompleto. Digite só os números (o último pode ser X).</div>
+              } @else if (showFormError('documentRequired')) {
+                <div class="invalid-feedback">Informe o CPF ou o RG.</div>
+              }
+            </div>
+
+            <div class="col-12 mt-1">
+              <div class="form-text mt-0">Preencha ao menos um documento: CPF ou RG. Na ficha impressa sai o CPF; sem CPF, sai o RG.</div>
             </div>
 
             <div class="col-md-4">
@@ -246,7 +263,7 @@
           @if (guardianOptions().length === 0) {
             Nenhuma pessoa maior de idade cadastrada. Cadastre o responsável primeiro (marque o tipo "Tutor legal").
           } @else {
-            CPF, endereço e telefone do responsável vêm do cadastro dele.
+            CPF ou RG, endereço e telefone do responsável vêm do cadastro dele.
           }
         </div>
       </div>

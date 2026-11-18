@@ -29,10 +29,21 @@ export class InMemoryPersonService {
   }
 
   async save(person: PersonInput): Promise<Person> {
-    const saved: Person = { ...person, id: person.id ?? crypto.randomUUID() };
+    const existing = person.id ? this.getById(person.id) : undefined;
+    // Como no banco, a data de cadastro e a desativação não mudam ao salvar
+    const saved: Person = {
+      ...person,
+      id: person.id ?? crypto.randomUUID(),
+      createdAt: existing?.createdAt ?? person.createdAt ?? new Date().toISOString(),
+      deactivatedAt: existing ? (existing.deactivatedAt ?? null) : (person.deactivatedAt ?? null),
+    };
     this.people.update(list =>
       list.some(p => p.id === saved.id) ? list.map(p => (p.id === saved.id ? saved : p)) : [...list, saved],
     );
     return saved;
+  }
+
+  async deactivate(id: string): Promise<void> {
+    this.people.update(list => list.map(p => (p.id === id ? { ...p, deactivatedAt: new Date().toISOString() } : p)));
   }
 }

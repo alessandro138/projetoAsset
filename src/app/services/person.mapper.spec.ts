@@ -5,6 +5,7 @@ describe('person.mapper', () => {
   const person: Omit<Person, 'id'> = {
     fullName: '  Ana Souza ',
     cpf: '52998224725',
+    rg: '',
     birthDate: '2023-03-05',
     nationality: 'Brasileira',
     birthCity: '',
@@ -50,7 +51,13 @@ describe('person.mapper', () => {
   });
 
   it('rebuilds the person from database rows (round trip)', () => {
-    const row: PessoaRow = { id: 'p1', foto_caminho: 'p1/foto.jpg', ...toPessoaInput(person) };
+    const row: PessoaRow = {
+      id: 'p1',
+      foto_caminho: 'p1/foto.jpg',
+      criado_em: '2026-11-18T13:00:00+00:00',
+      desativado_em: null,
+      ...toPessoaInput(person),
+    };
     const rebuilt = fromRows(
       row,
       { id: 'e1', pessoa_id: 'p1', ...toMatriculaInput(person.enrollment!), modalidades_servicos: { nome: 'Zumba' } },
@@ -62,6 +69,8 @@ describe('person.mapper', () => {
     expect(rebuilt.birthCity).toBe('');
     expect(rebuilt.types).toEqual(['beneficiario']);
     expect(rebuilt.photo).toBe('https://foto');
+    expect(rebuilt.createdAt).toBe('2026-11-18T13:00:00+00:00');
+    expect(rebuilt.deactivatedAt).toBeNull();
     expect(rebuilt.enrollment).toEqual({ startDate: '2026-02-01', endDate: '', modalityId: 'm1', modality: 'Zumba' });
     expect(rebuilt.health?.answers.allergy).toEqual({ answer: true, details: 'Lactose' });
     // Perguntas ausentes no banco voltam em branco

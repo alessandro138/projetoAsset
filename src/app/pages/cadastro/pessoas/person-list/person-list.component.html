@@ -3,6 +3,29 @@
   <a routerLink="nova" class="btn btn-secondary fw-bolder"><i class="bi bi-person-plus-fill me-2"></i>Nova pessoa</a>
 </div>
 
+@if (message()) {
+  <div class="alert alert-success d-flex align-items-center justify-content-between gap-2" role="status">
+    <span><i class="bi bi-check-circle-fill me-2"></i>{{ message() }}</span>
+    <button type="button" class="btn-close" aria-label="Fechar aviso" (click)="message.set('')"></button>
+  </div>
+}
+
+@if (deactivatedCount() > 0) {
+  <div class="form-check form-switch mb-3">
+    <input
+      class="form-check-input"
+      type="checkbox"
+      role="switch"
+      id="showDeactivated"
+      [checked]="showDeactivated()"
+      (change)="showDeactivated.set($any($event.target).checked)"
+    />
+    <label class="form-check-label" for="showDeactivated">
+      Mostrar cadastros desativados ({{ deactivatedCount() }})
+    </label>
+  </div>
+}
+
 @if (loadError()) {
   <div class="alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2">
     {{ loadError() }}
@@ -12,7 +35,9 @@
   <div class="text-center text-muted py-5"><span class="spinner-border spinner-border-sm me-2"></span>Carregando...</div>
 } @else if (rows().length === 0) {
   <div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-4 text-center text-muted">Nenhuma pessoa cadastrada ainda.</div>
+    <div class="card-body p-4 text-center text-muted">
+      {{ deactivatedCount() > 0 ? 'Nenhum cadastro ativo.' : 'Nenhuma pessoa cadastrada ainda.' }}
+    </div>
   </div>
 } @else {
   <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
@@ -21,21 +46,32 @@
         <thead class="table-light">
           <tr>
             <th>Nome</th>
-            <th>CPF</th>
+            <th>CPF / RG</th>
             <th>Idade</th>
             <th>Tipo</th>
             <th>Tutor legal</th>
+            <th>Cadastrado em</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           @for (row of rows(); track row.id) {
-            <tr>
-              <td class="fw-bold">{{ row.fullName }}</td>
-              <td class="font-monospace">{{ row.cpf }}</td>
+            <tr [class.text-muted]="row.deactivatedAt">
+              <td>
+                <span class="fw-bold">{{ row.fullName }}</span>
+                @if (row.deactivatedAt) {
+                  <span class="badge text-bg-secondary ms-2">Desativado em {{ row.deactivatedAt }}</span>
+                }
+              </td>
+              <td class="text-nowrap">
+                @if (row.document; as d) {
+                  <span class="small text-muted me-1">{{ d.label }}</span><span class="font-monospace">{{ d.value }}</span>
+                }
+              </td>
               <td>{{ row.age }}</td>
               <td>{{ row.types }}</td>
               <td>{{ row.guardian }}</td>
+              <td class="text-nowrap">{{ row.createdAt }}</td>
               <td class="text-end text-nowrap">
                 @if (row.isBeneficiary) {
                   <a [routerLink]="[row.id, 'ficha']" class="btn btn-sm btn-outline-secondary me-1" title="Ficha de matrícula">
@@ -43,6 +79,16 @@
                   </a>
                 }
                 <a [routerLink]="row.id" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil me-1"></i>Editar</a>
+                @if (!row.deactivatedAt) {
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger ms-1"
+                    title="Desativar cadastro"
+                    (click)="askDeactivate(row)"
+                  >
+                    <i class="bi bi-person-x me-1"></i>Desativar
+                  </button>
+                }
               </td>
             </tr>
           }
@@ -50,4 +96,57 @@
       </table>
     </div>
   </div>
+}
+
+<!-- Janela de confirmação da desativação (sem o JS do Bootstrap) -->
+@if (confirming(); as row) {
+  <div
+    class="modal d-block"
+    tabindex="-1"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="deactivateTitle"
+    (click)="cancelDeactivate()"
+  >
+    <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+      <div class="modal-content border-0 rounded-4 shadow">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5 fw-bolder" id="deactivateTitle">
+            <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Desativar cadastro
+          </h2>
+          <button type="button" class="btn-close" aria-label="Cancelar" [disabled]="deactivating()" (click)="cancelDeactivate()"></button>
+        </div>
+        <div class="modal-body">
+          <p>Deseja desativar o cadastro de <strong>{{ row.fullName }}</strong>?</p>
+          <p class="text-muted small mb-0">
+            Os dados não são apagados: o cadastro deixa de aparecer na lista (use "Mostrar cadastros desativados" para
+            vê-lo). Ficam registrados a data da desativação e quem desativou.
+          </p>
+          @if (row.activeWards.length) {
+            <div class="alert alert-warning small mt-3 mb-0">
+              <i class="bi bi-info-circle-fill me-1"></i>
+              Esta pessoa é tutor legal de: <strong>{{ row.activeWards.join(', ') }}</strong>.
+              Esses beneficiários continuam ativos e vinculados a ela.
+            </div>
+          }
+          @if (deactivateError()) {
+            <div class="alert alert-danger small mt-3 mb-0">{{ deactivateError() }}</div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" [disabled]="deactivating()" (click)="cancelDeactivate()">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-danger fw-bolder" [disabled]="deactivating()" (click)="confirmDeactivate()">
+            @if (deactivating()) {
+              <span class="spinner-border spinner-border-sm me-2"></span>Desativando...
+            } @else {
+              <i class="bi bi-person-x me-1"></i>Sim, desativar
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop show"></div>
 }

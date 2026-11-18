@@ -1,3 +1,5 @@
+import { normalizeRg } from './rg';
+
 export function onlyDigits(value: string): string {
   return value.replace(/\D/g, '');
 }
@@ -20,10 +22,12 @@ export function applyPattern(value: string, pattern: string): string {
   return result;
 }
 
-export type MaskType = 'cpf' | 'cep' | 'phone' | 'sus';
+export type MaskType = 'cpf' | 'rg' | 'cep' | 'phone' | 'sus';
 
 export function formatMask(value: string, type: MaskType): string {
   switch (type) {
+    case 'rg':
+      return normalizeRg(value);
     case 'cpf':
       return applyPattern(value, '000.000.000-00');
     case 'cep':

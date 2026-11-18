@@ -12,6 +12,7 @@ import {
   emptyHealthRecord,
 } from '../../../models/person.model';
 import { formatAddress } from '../../utils/address';
+import { mainDocument } from '../../utils/document';
 import { formatIsoDate, isMinor } from '../../utils/date';
 import { formatMask } from '../../utils/mask';
 
@@ -46,7 +47,8 @@ export class EnrollmentSheetComponent {
     const p = this.person();
     return {
       birthDate: formatIsoDate(p.birthDate),
-      cpf: p.cpf ? formatMask(p.cpf, 'cpf') : '',
+      /** CPF; sem CPF, o RG (só um dos dois aparece na ficha) */
+      document: mainDocument(p),
       birthPlace: [p.birthState, p.birthCity].filter(Boolean).join(' / '),
       susCard: p.susCard ? formatMask(p.susCard, 'sus') : '',
       address: formatAddress(p.address),
@@ -62,7 +64,7 @@ export class EnrollmentSheetComponent {
     }
     return {
       name: guardian.fullName,
-      cpf: formatMask(guardian.cpf, 'cpf'),
+      document: mainDocument(guardian),
       relationship: this.person().guardianRelationship,
       address: formatAddress(guardian.address),
       phone: guardian.phone ? formatMask(guardian.phone, 'phone') : '',

@@ -10,6 +10,7 @@ describe('EnrollmentSheetComponent', () => {
   const student: PersonDraft = {
     fullName: 'Ana Souza',
     cpf: '52998224725',
+    rg: '',
     birthDate: `${thisYear - 3}-03-05`,
     nationality: 'Brasileira',
     birthCity: 'São Paulo',
@@ -36,6 +37,7 @@ describe('EnrollmentSheetComponent', () => {
     id: 'g1',
     fullName: 'Carla Souza',
     cpf: '11144477735',
+    rg: '',
     birthDate: `${thisYear - 30}-01-01`,
     phone: '11999998888',
     types: ['tutor'],
@@ -72,6 +74,21 @@ describe('EnrollmentSheetComponent', () => {
     expect(text).toContain('111.444.777-35');
     expect(text).toContain('Mãe');
     expect(text).toContain('(11) 99999-8888');
+  });
+
+  it('prints only the CPF when both documents were typed', () => {
+    const text = render({ ...student, rg: '12345678X' }, guardian);
+    expect(text).toContain('CPF:529.982.247-25');
+    expect(text).not.toContain('12345678X');
+    expect(text).not.toContain('RG:');
+  });
+
+  it('prints the RG when there is no CPF, for the student and the responsible', () => {
+    const text = render({ ...student, cpf: '', rg: '12345678X' }, { ...guardian, cpf: '', rg: '998877665' });
+    expect(text).toContain('RG:12345678X');
+    expect(text).toContain('RG:998877665');
+    expect(text).toContain('RG 998877665');
+    expect(text).not.toContain('CPF:');
   });
 
   it('leaves the responsible data blank for adults', () => {

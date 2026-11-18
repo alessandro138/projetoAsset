@@ -110,8 +110,10 @@ export interface HealthRecord {
 export interface Person {
   id: string;
   fullName: string;
-  /** Somente dígitos */
+  /** Somente dígitos; vazio quando a pessoa só tem RG (ao menos um dos dois é obrigatório) */
   cpf: string;
+  /** RG sem pontos e traço (até 12 caracteres; o último pode ser X); vazio quando não informado */
+  rg: string;
   /** 'AAAA-MM-DD' */
   birthDate: string;
   /** Nacionalidade, ex.: 'Brasileira' */
@@ -137,6 +139,10 @@ export interface Person {
   imageConsent: boolean | null;
   /** Consentimento LGPD (dado pelo tutor legal, no caso de menores) */
   consentGiven: boolean;
+  /** Data/hora do cadastro (ISO); preenchida pelo banco, o formulário não altera */
+  createdAt?: string;
+  /** Data/hora da desativação (ISO); vazio/ausente = cadastro ativo. Quem desativou fica só no banco */
+  deactivatedAt?: string | null;
 }
 
 export function emptyHealthRecord(): HealthRecord {

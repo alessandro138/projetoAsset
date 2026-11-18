@@ -41,7 +41,7 @@
   <table class="sheet-table">
     <tr><th>Data de Nascimento:</th><td>{{ s.birthDate }}</td></tr>
     <tr><th>Nome completo:</th><td>{{ p.fullName }}</td></tr>
-    <tr><th>CPF:</th><td>{{ s.cpf }}</td></tr>
+    <tr><th>{{ s.document?.label ?? 'CPF' }}:</th><td>{{ s.document?.value }}</td></tr>
     <tr><th>Naturalidade:</th><td>{{ p.nationality }}</td></tr>
     <tr><th>Estado/Cidade que nasceu:</th><td>{{ s.birthPlace }}</td></tr>
     <tr><th>N° Cartão do SUS:</th><td>{{ s.susCard }}</td></tr>
@@ -52,7 +52,7 @@
   <h2 class="sheet-subtitle">Dados dos Responsáveis (para menor de idade)</h2>
   <table class="sheet-table">
     <tr><th>Responsável:</th><td>{{ r?.name }}</td></tr>
-    <tr><th>CPF:</th><td>{{ r?.cpf }}</td></tr>
+    <tr><th>{{ r?.document?.label ?? 'CPF' }}:</th><td>{{ r?.document?.value }}</td></tr>
     <tr><th>Grau de parentesco:</th><td>{{ r?.relationship }}</td></tr>
     <tr><th>Endereço:</th><td>{{ r?.address }}</td></tr>
     <tr><th>Telefone e/ou WhatsAPP:</th><td>{{ r?.phone }}</td></tr>
@@ -130,7 +130,12 @@
     <div class="signature-line"></div>
     <div class="fw-bold">Assinatura do Responsável</div>
     @if (r) {
-      <div class="small">{{ r.name }} – CPF {{ r.cpf }}</div>
+      <div class="small">
+        {{ r.name }}
+        @if (r.document; as d) {
+          – {{ d.label }} {{ d.value }}
+        }
+      </div>
     }
   </div>
 

@@ -13,6 +13,7 @@ describe('EnrollmentSheetPageComponent', () => {
     return {
       fullName: 'Bruno Lima',
       cpf: '52998224725',
+      rg: '',
       birthDate: `${thisYear - 20}-03-05`,
       nationality: 'Brasileira',
       birthCity: 'São Paulo',
